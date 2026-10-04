@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hinterland — Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&family=Marcellus&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#ECE3CF; --ink:#2F2B24; --ink-dim:rgba(47,43,36,.68); --ink-faint:rgba(47,43,36,.34); --sun:#B5843A;
+  --g-ink:#F4EFE5; --g-dim:rgba(244,239,229,.66); --g-faint:rgba(244,239,229,.32); --g-sun:#E9C47E;
+  --ease:cubic-bezier(.45,0,.2,1);
+  --serif:"Marcellus","Iowan Old Style",Georgia,serif; --sans:"Jost","Avenir Next","Segoe UI",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --paper:#ECE3CF; } }
+:root[data-theme="dark"]{ --paper:#ECE3CF; }
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans)}
+header.top{padding:40px clamp(20px,5vw,64px) 10px;max-width:1500px;margin:0 auto}
+header.top h1{font-family:var(--serif);font-weight:400;font-size:clamp(34px,4vw,54px);margin:0}
+header.top p{max-width:760px;font-weight:300;line-height:1.55;color:var(--ink-dim)}
+header.top nav{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:18px;font-size:14px}
+header.top nav a{color:var(--ink-dim);text-decoration:none;border-bottom:1px solid var(--ink-faint)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px 30px;max-width:1500px;margin:20px auto 0;padding:0 clamp(20px,5vw,64px)}
+.rules div{font-size:14px;font-weight:300;line-height:1.5}
+.rules b{display:block;font-family:var(--serif);font-weight:400;font-size:17px;margin-bottom:4px}
+.boards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,620px),1fr));gap:56px 44px;max-width:1500px;margin:40px auto 80px;padding:0 clamp(20px,5vw,64px)}
+.board h2{font-family:var(--serif);font-weight:400;font-size:24px;margin:0 0 4px}
+.board .when{font-size:13px;color:var(--ink-faint);font-weight:300;margin:0 0 12px}
+.board ol{margin:14px 0 0;padding-left:20px;font-size:13.5px;line-height:1.55;font-weight:300}
+.board ol li{margin-bottom:4px}
+.board code{font-family:var(--mono);font-size:12px;background:rgba(47,43,36,.07);padding:0 4px;border-radius:2px}
+
+/* ---- the 16:9 screen ---- */
+.screen{position:relative;aspect-ratio:16/9;border-radius:6px;overflow:hidden;container-type:inline-size;box-shadow:0 18px 40px rgba(40,30,10,.22);color:var(--g-ink)}
+.screen svg.bg{position:absolute;inset:0;width:100%;height:100%}
+.screen .ui{position:absolute;inset:0;font-family:var(--sans)}
+.n{position:absolute;width:2.4cqw;height:2.4cqw;min-width:16px;min-height:16px;border-radius:50%;background:#B5843A;color:#fff;font:500 max(10px,1.3cqw)/1 var(--sans);display:grid;place-items:center;box-shadow:0 0 0 2px rgba(255,255,255,.7);z-index:9}
+.markers-off .n{display:none}
+.toggle{position:sticky;top:12px;z-index:20;float:right;margin-right:clamp(20px,5vw,64px);font-size:13px;background:var(--paper);border:1px solid var(--ink-faint);border-radius:20px;padding:6px 14px;cursor:pointer;color:var(--ink)}
+
+/* shared in-game UI atoms (all sizes in cqw so they scale with the board = 1920px reference: 1cqw ≈ 19.2px) */
+.lb{position:absolute;left:0;right:0;height:9%;background:#000}
+.lb.t{top:0}.lb.b{bottom:0}
+.scrim{position:absolute;left:0;right:0;top:0;height:9cqw;background:linear-gradient(rgba(10,14,18,.3),transparent)}
+.obj{position:absolute;top:1.6cqw;left:50%;transform:translateX(-50%);font-size:.85cqw;letter-spacing:.05em;text-shadow:0 1px 10px rgba(0,0,0,.6);white-space:nowrap}
+.glyphs{position:absolute;left:2.4cqw;bottom:2.2cqw;display:flex;gap:.45cqw;opacity:.42}
+.glyphs i{width:.95cqw;height:.95cqw;border:1px solid var(--g-ink);border-radius:1px;position:relative}
+.glyphs i::after{content:"";position:absolute;left:12%;right:12%;top:46%;height:1px;background:var(--g-ink);opacity:.7}
+.glyphs i.lost{opacity:.25;border-style:dashed}
+.glyphs.lit{opacity:1}
+.ascent{position:absolute;right:1.8cqw;top:22%;bottom:22%;width:1px;background:var(--g-faint)}
+.ascent b{position:absolute;left:-.3cqw;width:.6cqw;height:.6cqw;border-radius:50%;background:var(--g-ink)}
+.keys{position:absolute;right:2.2cqw;bottom:2cqw;font-size:.7cqw;color:var(--g-dim);display:flex;flex-direction:column;align-items:flex-end;gap:.5cqw;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+kbd{font-family:var(--sans);font-size:.62cqw;min-width:1.25cqw;height:1.25cqw;padding:0 .35cqw;display:inline-grid;place-items:center;border:1px solid var(--g-faint);border-radius:.22cqw;color:var(--g-ink)}
+.serif{font-family:var(--serif)}
+.shadow{text-shadow:0 2px 24px rgba(0,0,0,.45)}
+.prompt{position:absolute;display:flex;align-items:center;gap:.7cqw;font-size:.8cqw;text-shadow:0 1px 8px rgba(0,0,0,.7)}
+.ring{width:2.2cqw;height:2.2cqw;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring span{position:absolute;inset:0;display:grid;place-items:center;font-size:.75cqw}
+.speech{position:absolute;text-align:center;transform:translateX(-50%);text-shadow:0 1px 10px rgba(0,0,0,.65)}
+.speech small{display:block;font-size:.62cqw;color:var(--g-dim);letter-spacing:.04em;margin-bottom:.3cqw}
+.speech p{margin:0;font-size:.95cqw;font-weight:300;max-width:22cqw}
+.speech::after{content:"";display:block;width:1px;height:1.4cqw;background:var(--g-faint);margin:.6cqw auto 0}
+.menu{display:flex;flex-direction:column;gap:.2cqw}
+.menu span{font-size:1cqw;color:var(--g-dim);padding:.3cqw 0;position:relative}
+.menu span.f{color:var(--g-ink);padding-left:2cqw}
+.menu span.f::before{content:"";position:absolute;left:0;top:50%;width:1.45cqw;height:1px;background:var(--g-sun)}
+.lanterns{display:flex;gap:1cqw;justify-content:center;margin:1.6cqw 0 0}
+.lanterns i{width:.7cqw;height:1cqw;border-radius:.2cqw;background:#FFC874;box-shadow:0 0 1.2cqw #FFB24A}
+.lanterns i.off{background:transparent;border:1px solid var(--g-faint);box-shadow:none}
+.dev{position:absolute;right:1.2cqw;top:1.2cqw;width:21cqw;background:rgba(14,18,22,.84);border-radius:.4cqw;padding:.9cqw 1cqw;font-family:var(--mono);font-size:.6cqw;line-height:1.55;color:#D9E2E6;backdrop-filter:blur(6px)}
+.dev h4{margin:0 0 .4cqw;font:500 .65cqw var(--mono);color:#9FB3BD;letter-spacing:.06em}
+.dev .row{display:flex;justify-content:space-between;gap:1cqw}
+.dev .sec{border-top:1px solid rgba(255,255,255,.1);margin-top:.6cqw;padding-top:.5cqw}
+.dev .bar{height:.25cqw;background:rgba(255,255,255,.15);border-radius:1px;margin:.3cqw 0}
+.dev .bar i{display:block;height:100%;width:62%;background:#E9C47E}
+.dev .chip{display:inline-block;border:1px solid rgba(255,255,255,.22);border-radius:.2cqw;padding:0 .35cqw;margin:.15cqw .15cqw 0 0}
+.dev .chip.on{background:#E9C47E;color:#14191D;border-color:#E9C47E}
+.ticks i{position:absolute;width:2cqw;height:2cqw;border-color:rgba(255,255,255,.75);border-style:solid;border-width:0}
+.thirds{position:absolute;inset:0;background:linear-gradient(90deg,transparent 33.2%,rgba(255,255,255,.14) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.14) 66.6%,transparent 66.8%),linear-gradient(transparent 33.2%,rgba(255,255,255,.14) 33.3%,transparent 33.5%,transparent 66.5%,rgba(255,255,255,.14) 66.6%,transparent 66.8%)}
+.pbar{position:absolute;left:50%;bottom:2.4cqw;transform:translateX(-50%);display:flex;gap:2.6cqw;align-items:flex-end;font-size:.72cqw;color:var(--g-dim);text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.pbar b{display:block;font-weight:400;color:var(--g-ink);font-size:.82cqw;margin-top:.3cqw}
+.pbar .sl{width:7cqw;height:1px;background:var(--g-faint);position:relative;margin-top:.7cqw}
+.pbar .sl i{position:absolute;top:-.3cqw;width:.6cqw;height:.6cqw;border-radius:50%;background:var(--g-ink)}
+.paper{background:#ECE3CF;color:#2F2B24}
+.stick{position:absolute;width:6cqw;height:6cqw;border:1px solid var(--g-faint);border-radius:50%}
+.stick i{position:absolute;left:50%;top:50%;width:2cqw;height:2cqw;margin:-1cqw 0 0 -1cqw;border-radius:50%;background:rgba(244,239,229,.5);transform:translate(1.2cqw,-1.6cqw)}
+.tbtn{position:absolute;width:4.4cqw;height:4.4cqw;border-radius:50%;border:1px solid var(--g-faint);display:grid;place-items:center;font-size:.8cqw;color:var(--g-ink);background:rgba(16,22,28,.18)}
+.ribbon{position:absolute;left:2cqw;top:20%;bottom:20%;width:1px;background:var(--g-faint)}
+.ribbon .band{position:absolute;left:-.5cqw;width:1.1cqw;background:rgba(255,255,255,.22)}
+.ribbon .me{position:absolute;left:-.45cqw;width:.9cqw;height:.9cqw;border-radius:50%;background:var(--g-ink)}
+.ribbon .goal{position:absolute;left:-.25cqw;width:.5cqw;height:.5cqw;border:1px solid var(--g-sun);transform:rotate(45deg)}
+.ribbon small{position:absolute;left:1.4cqw;font-size:.6cqw;color:var(--g-dim);white-space:nowrap;transform:translateY(-35%)}
+.puff{position:absolute;left:1.6cqw;bottom:16%;display:flex;flex-direction:column;gap:.4cqw}
+.puff i{width:.6cqw;height:.6cqw;border-radius:50%;background:var(--g-ink);opacity:.85}
+.puff i.e{background:transparent;border:1px solid var(--g-faint)}
+.rain{position:absolute;inset:0;background:repeating-linear-gradient(105deg,transparent 0 1.2cqw,rgba(220,230,240,.18) 1.2cqw 1.25cqw);mix-blend-mode:screen}
+.flash{position:absolute;inset:0;background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.55),transparent 60%)}
+.reticle{position:absolute;width:3.4cqw;height:3.4cqw;transform:translate(-50%,-50%)}
+.reticle svg{width:100%;height:100%}
+.slips{position:absolute;left:2.2cqw;top:18%;display:flex;flex-direction:column;gap:.7cqw}
+.slip{background:#F3EBD8;color:#2F2B24;padding:.6cqw .8cqw;width:13cqw;box-shadow:0 .5cqw 1.2cqw rgba(0,0,0,.25);font-size:.68cqw;line-height:1.4}
+.slip:nth-child(odd){transform:rotate(-1.2deg)}.slip:nth-child(even){transform:rotate(.8deg)}
+.slip b{font-family:var(--serif);font-weight:400;font-size:.9cqw;display:block}
+.slip.done{opacity:.55;text-decoration:line-through}
+.stamp{width:6cqw;height:6cqw;border-radius:50%;border:.18cqw solid #B0473A;color:#B0473A;display:grid;place-items:center;text-align:center;font-family:var(--serif);font-size:.62cqw;line-height:1.15;transform:rotate(-12deg);opacity:.85}
+.stamp.blue{border-color:#3E6FA8;color:#3E6FA8}.stamp.gold{border-color:#B5843A;color:#B5843A}.stamp.green{border-color:#4F8A54;color:#4F8A54}.stamp.ink{border-color:#2F2B24;color:#2F2B24}.stamp.empty{border-style:dashed;border-color:rgba(47,43,36,.3);color:rgba(47,43,36,.35);transform:none}
+.radial{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:22cqw;height:22cqw}
+.radial span{position:absolute;transform:translate(-50%,-50%);font-size:.9cqw;color:var(--g-dim);white-space:nowrap;text-shadow:0 1px 10px rgba(0,0,0,.6)}
+.radial span.f{color:var(--g-ink)}
+.radial::before{content:"";position:absolute;inset:30%;border:1px solid var(--g-faint);border-radius:50%}
+.minimap{position:absolute;right:2cqw;bottom:2cqw;width:15cqw;height:10cqw;background:#ECE3CF;transform:rotate(1.5deg);box-shadow:0 .6cqw 1.4cqw rgba(0,0,0,.3);overflow:hidden}
+.edges{position:absolute;inset:0;box-shadow:inset 0 0 6cqw rgba(200,225,240,.55)}
+.cracks{position:absolute;inset:0}
+.vcard{position:absolute;bottom:14%;transform:translateX(-50%);text-align:center;color:var(--g-dim);font-size:.8cqw}
+.vcard b{display:block;font-family:var(--serif);font-weight:400;color:var(--g-ink);font-size:1.6cqw}
+.sheet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr));gap:34px;max-width:1500px;margin:10px auto 90px;padding:0 clamp(20px,5vw,64px)}
+.lv{background:#F3EBD8;border-radius:4px;overflow:hidden;box-shadow:0 10px 26px rgba(60,40,10,.16)}
+.lv .pic{position:relative;aspect-ratio:16/7;container-type:inline-size}
+.lv .pic .t{position:absolute;left:4cqw;bottom:4cqw;color:#F4EFE5;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+.lv .pic .t small{display:block;font-size:2.4cqw;opacity:.75}
+.lv .pic .t b{font-family:var(--serif);font-weight:400;font-size:6cqw;line-height:1}
+.lv dl{display:grid;grid-template-columns:110px 1fr;gap:6px 14px;margin:0;padding:16px 18px 20px;font-size:13.5px;line-height:1.45}
+.lv dt{color:var(--ink-faint);font-weight:300}
+.lv dd{margin:0;font-weight:300}
+h2.part{font-family:var(--serif);font-weight:400;font-size:clamp(28px,3vw,40px);max-width:1500px;margin:30px auto 6px;padding:0 clamp(20px,5vw,64px)}
+p.partsub{max-width:1500px;margin:0 auto 18px;padding:0 clamp(20px,5vw,64px);font-weight:300;color:var(--ink-dim)}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Screens</h1>
+  <p>Every in-game screen for the Journeys update, drawn at 16:9 with real type and spacing. Each board's numbers match the spec list under it. Sizes are given at 1920 px wide; scale with the viewport (≈ 1 cqw = 19.2 px). Pair with the <a href="https://claude.ai/artifact/K66C16dMg3YoLG49cn1x7v">Atlas</a> and the <a href="https://claude.ai/artifact/SCz6ebFeATKvyNfpBDFzNr">Asset Lab</a>.</p>
+  <nav id="toc"></nav>
+</header>
+<div class="rules">
+  <div><b>One voice</b>Marcellus for names of places and big moments. Jost 300/400 for everything else. Sentence case. No ALL CAPS except tiny dev labels.</div>
+  <div><b>Nothing in boxes</b>In-game UI is text on the world with soft shadows. The only panels are paper (Atlas, loading) and the dev panel.</div>
+  <div><b>Quiet by default</b>HUD elements sit at 32–60% opacity and brighten only when something changes, then settle back over 3 s.</div>
+  <div><b>Smooth, never springy</b>Every fade uses cubic-bezier(.45,0,.2,1). Fades take 0.6–1.6 s; nothing pops or bounces.</div>
+</div>
+<button class="toggle" id="mk">Hide numbers</button>
+<main class="boards" id="boards"></main>
+<h2 class="part">New mechanics</h2><p class="partsub">Vehicles, flight, the winch, Hut Rounds, the bus, camping, water, ice, night, forecast and the full settings.</p>
+<section class="boards" id="boards2"></section>
+<h2 class="part" id="levels-h">All 15 journeys</h2><p class="partsub">One sheet per level: which screens it uses, its objective line, its ending card and its reward. Full design in docs/JOURNEYS.md.</p>
+<section class="sheet-grid" id="levels" ></section>
+
+<script>
+(() => {
+/* ---------- painted backdrops (stand-ins for the 3D scene) ---------- */
+function rng(s){ return () => { s = (s*16807) % 2147483647; return (s - 1)/2147483646; }; }
+function ridge(seed, y, amp, rough, w = 1600){ const r = rng(seed); let p = `M0 900 L0 ${y}`; let v = 0; for (let x = 0; x <= w; x += 40){ v += (r() - .5)*rough; v *= .9; p += ` L${x} ${y - Math.abs(Math.sin(x/w*Math.PI*(1 + seed%3)))*amp + v*amp*.4}`; } return p + ` L${w} 900 Z`; }
+const P = {
+  morning: { sky:["#9DBFD9","#E4ECEC"], sun:"#FFF4DE", hills:["#B9C8CE","#93A9A4","#6F8A62","#5C7A46"], path:"#9B835F" },
+  golden:  { sky:["#7C8DB0","#F2B98A"], sun:"#FFD69A", hills:["#C6A9A0","#9E8C86","#7D7A55","#5E6A3A"], path:"#A07E58" },
+  fog:     { sky:["#C9D0D2","#DDE1DE"], sun:"#FFFFFF", hills:["#D2D7D6","#C1C8C5","#A7B1A8","#8E9A86"], path:"#9C907C" },
+  clouds:  { sky:["#6A7FA8","#F4C38D"], sun:"#FFE2B0", hills:["#F4E6D6","#EFD9C2","#9F8F84","#6E6556"], path:"#8E7A62" },
+  night:   { sky:["#0D1424","#2A3550"], sun:"#DCE6FF", hills:["#2C364C","#232C3E","#1A2230","#121820"], path:"#3A3530" },
+  dusk:    { sky:["#4E5C86","#E39A7A"], sun:"#FFC08A", hills:["#8C7E92","#6D6880","#4D5244","#3A4232"], path:"#6E5A44" }
+};
+function backdrop(k, opts = {}){
+  const p = P[k], id = "g" + Math.random().toString(36).slice(2, 7);
+  let s = `<svg class="bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p.sky[0]}"/><stop offset="1" stop-color="${p.sky[1]}"/></linearGradient><radialGradient id="${id}s"><stop offset="0" stop-color="${p.sun}" stop-opacity=".95"/><stop offset="1" stop-color="${p.sun}" stop-opacity="0"/></radialGradient></defs>`;
+  s += `<rect width="1600" height="900" fill="url(#${id})"/>`;
+  if (k === "night") for (let i = 0; i < 90; i++){ const r = rng(i + 5); s += `<circle cx="${r()*1600}" cy="${r()*420}" r="${r()*1.6 + .3}" fill="#fff" opacity="${.3 + r()*.6}"/>`; }
+  s += `<circle cx="${opts.sunX || 1150}" cy="${opts.sunY || 330}" r="${k === "night" ? 40 : 170}" fill="url(#${id}s)"/>`;
+  if (k === "night") s += `<circle cx="${opts.sunX || 1150}" cy="${opts.sunY || 200}" r="16" fill="#E9EEFA"/>`;
+  p.hills.forEach((c, i) => { s += `<path d="${ridge(i*7 + 3, 420 + i*90, 160 - i*30, 3)}" fill="${c}"/>`; });
+  if (k === "clouds") for (let i = 0; i < 9; i++){ const r = rng(i + 40); s += `<ellipse cx="${r()*1600}" cy="${560 + r()*80}" rx="${200 + r()*240}" ry="${30 + r()*30}" fill="#FFF3E6" opacity=".85"/>`; }
+  if (k === "fog") s += `<rect width="1600" height="900" fill="#E3E6E3" opacity=".55"/>`;
+  if (opts.path !== false) s += `<path d="M560 900 C 700 760 760 700 900 640 L 960 640 C 860 720 860 790 1000 900 Z" fill="${p.path}" opacity=".9"/>`;
+  if (opts.vehicle) s += `<g transform="translate(${opts.vx || 760} ${opts.vy || 650}) scale(${opts.vs || 1})" fill="${k === "night" ? "#0E1218" : "#3B4A47"}"><rect x="0" y="0" width="70" height="56" rx="8"/><rect x="62" y="16" width="110" height="40" rx="3" fill="${k === "night" ? "#151A20" : "#7A5C3E"}"/><circle cx="26" cy="64" r="12" fill="#1E1D1B"/><circle cx="150" cy="64" r="12" fill="#1E1D1B"/>${k === "night" ? '<circle cx="2" cy="34" r="6" fill="#FFE7B0"/>' : ""}</g>`;
+  if (opts.person) s += `<g transform="translate(${opts.px} ${opts.py})" fill="${k === "night" ? "#0E1218" : "#2F3A3E"}"><circle cx="0" cy="-58" r="9"/><rect x="-9" y="-48" width="18" height="34" rx="6"/><rect x="-8" y="-16" width="6" height="22"/><rect x="2" y="-16" width="6" height="22"/><rect x="9" y="-46" width="10" height="20" rx="3" fill="#6E7F54"/></g>`;
+  if (opts.crate) s += `<g transform="translate(${opts.cx} ${opts.cy}) rotate(12)"><rect width="30" height="22" fill="#C9A56C" stroke="#7C5F3A" stroke-width="2"/></g>`;
+  if (opts.fire) s += `<g transform="translate(${opts.fx} ${opts.fy})"><circle r="120" fill="#FFB060" opacity=".18"/><circle r="50" fill="#FFB060" opacity=".25"/><path d="M-12 0 Q0 -40 12 0 Z" fill="#FFD27A"/><path d="M-20 4 L20 4" stroke="#3A2A20" stroke-width="5"/></g>`;
+  if (opts.hut) s += `<g transform="translate(${opts.hx} ${opts.hy})"><rect x="-40" y="-36" width="80" height="36" fill="#8E887E"/><path d="M-50 -34 L0 -64 L50 -34 Z" fill="#5E4F40"/><rect x="-8" y="-24" width="16" height="24" fill="#FFC874"/></g>`;
+  return s + `</svg>`;
+}
+const n = (k, l, t) => `<i class="n" style="left:${l};top:${t}">${k}</i>`;
+const glyph = (states) => `<div class="glyphs ${states.includes("lit") ? "lit" : ""}">${states.filter(x => x !== "lit").map(s => `<i class="${s}"></i>`).join("")}</div>`;
+
+/* ---------- boards ---------- */
+const B = [
+ { id:"intro", title:"Journey intro", when:"After Begin on the Atlas, while the region fades in from the paper. 6 s total, then the camera glide hands over control.", bg:backdrop("morning", { vehicle:true }),
+   ui:`<div class="lb t"></div><div class="lb b"></div>
+   <div style="position:absolute;left:6cqw;bottom:16%;" class="shadow"><div style="font-size:.85cqw;color:var(--g-dim);letter-spacing:.04em">Journey 2</div><div class="serif" style="font-size:4.4cqw;line-height:1;margin:.4cqw 0 .8cqw">The Long Way Up</div><div style="font-size:1.05cqw;font-weight:300;color:var(--g-dim)">Six crates. One road. It goes round and round, and up.</div><div style="font-size:.78cqw;color:var(--g-faint);margin-top:1.2cqw">The Mule · about forty minutes</div></div>` + n(1,"5cqw","58%") + n(2,"5cqw","79%"),
+   spec:["Kicker 16 px Jost 400 66% → title Marcellus 84 px → line Jost 300 20 px 66% → meta 15 px 32%. Left 6 cqw, bottom 16%.","Sequence: letterbox already in; kicker fades in at 0.4 s, title at 0.9 s, line at 1.5 s, meta at 2.0 s (each 1.1 s fade). All out together at 5.0 s over 1.2 s, then the camera glide starts."] },
+
+ { id:"hud", title:"HUD while driving", when:"Normal play. Everything quiet; key hints only for the first ~12 s of a journey.", bg:backdrop("morning", { vehicle:true }),
+   ui:`<div class="scrim"></div><div class="obj">Take the crates up to the hut</div>${glyph(["","","","","",""])}<div class="ascent"><b style="top:62%"></b></div>
+   <div class="keys"><div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> drive</div><div><kbd>E</kbd> load a crate</div><div><kbd>P</kbd> photo &nbsp;<kbd>Esc</kbd> pause</div></div>` + n(1,"57%","1.2cqw") + n(2,"1cqw","86%") + n(3,"95.5%","40%") + n(4,"84%","74%") + n(5,"30%","1.2cqw"),
+   spec:["Objective: 16 px Jost 400, letter-spacing .05em, top 30 px. Opacity 95% for 8 s, then 0% while speed > 4 m/s and 62% when stopped (1.6 s fades).","Cargo glyphs: one 18 px outlined square per crate, gap 9 px, bottom-left 46/42 px, at 42% opacity. Lost crate = dashed outline at 25%.","Ascent line (Kettle Peak only): 1 px line on the right edge from 22% to 78% height, with a 12 px dot = route progress. Only visible when stopped for 1.5 s.","Key hints: as in the prototype, with new rows for E and P. They hide after 12 s of driving.","Top scrim: 0.3 → 0 black gradient, 170 px tall. It keeps the objective readable against a bright sky (the readability bug in your first screenshot)."] },
+
+ { id:"cargo", title:"A crate slips", when:"A strap breaks, or the player drives near a fallen crate.", bg:backdrop("golden", { vehicle:true, vx:900, vy:640, crate:true, cx:640, cy:700 }),
+   ui:`<div class="scrim"></div>${glyph(["lit","","","","","lost",""]).replace('class="glyphs lit"','class="glyphs lit"')}
+   <div class="prompt" style="left:33%;top:66%"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="none" stroke="rgba(244,239,229,.3)" stroke-width="1.5"/><circle cx="18" cy="18" r="16" fill="none" stroke="#E9C47E" stroke-width="1.5" stroke-dasharray="100" stroke-dashoffset="40" pathLength="100"/></svg><span>E</span></div>Hold to load</div>` + n(1,"1cqw","80%") + n(2,"31%","60%"),
+   spec:["On strap break: glyphs go to 100% for 3 s, the lost glyph flips to dashed, then everything settles back to 42%. No text, no sound sting, just the crate falling with a rack creak.","World-space prompt pinned 0.6 m above the crate, shown only when < 3 m away and < 2 m/s. 42 px ring: track at 30%, fill in sun colour, 0.8 s hold. Label 15 px. Mobile: the ring itself is the tap-and-hold target.","On complete: the crate lerps onto the rack over 0.8 s (ease-in-out), the prompt fades over 0.4 s, and the glyph refills."] },
+
+ { id:"traveler", title:"Traveler line", when:"Stopped within 6 m of a traveler. One line at a time; the next line needs another stop later.", bg:backdrop("morning", { vehicle:true, vx:1020, vy:660, person:true, px:720, py:640 }),
+   ui:`<div class="speech" style="left:45%;top:44%"><small>Ama, at the orchard</small><p>Mind the corners with a full rack. The mountain's patient, you can be too.</p></div>` + n(1,"34%","40%"),
+   spec:["Name 12 px Jost 400 66% + line 18 px Jost 300, max 420 px wide, centred over the head, with a 1 px tick pointing down. No bubble or box.","Fades in over 0.9 s once stopped for 0.6 s. Holds 4 s plus 0.06 s per character, then fades over 1.2 s. Drive off and it fades immediately.","Remembered: line index per traveler is saved, and later lines unlock after journeys (\"You made it up with the crates!\").","Settings: Traveler lines on/off, text size S/M/L."] },
+
+ { id:"campfire", title:"Campfire rest", when:"Arrive at a campfire, hold E to sit. The HUD fades, the camera starts a slow orbit, the game saves.", bg:backdrop("dusk", { path:false, fire:true, fx:800, fy:700, vehicle:true, vx:1080, vy:660, vs:.9 }),
+   ui:`<div class="lb t"></div><div class="lb b"></div><div style="position:absolute;left:50%;bottom:14%;transform:translateX(-50%);text-align:center" class="shadow"><div class="serif" style="font-size:2.2cqw">Terrace camp</div><div style="font-size:.7cqw;color:var(--g-dim);margin:.4cqw 0 1.6cqw"><span style="display:inline-block;width:.45cqw;height:.45cqw;border-radius:50%;background:#E9C47E;margin-right:.4cqw;vertical-align:middle"></span>Saved</div>
+   <div class="menu" style="align-items:center"><span class="f">Wait until golden hour</span><span>Wait until night</span><span>Back on the road</span></div></div>` + n(1,"38%","62%") + n(2,"41%","76%") + n(3,"58%","86%"),
+   spec:["Place name Marcellus 42 px, centred, bottom 14%. \"Saved\" 13 px with a 9 px sun dot; fades out after 3 s.","Options are the same text menu as the title (hover line + slide). The wait options sweep time of day over 6 s while the camera keeps orbiting; ambience crossfades.","Camera: orbit radius 7 m around the fire, 0.03 rad/s, height 1.6 m. Any drive key = Back on the road (1.2 s glide back to the chase cam)."] },
+
+ { id:"moment", title:"Camera moment / discovery", when:"Beat triggers like breaking above the clouds. Input stays live; the camera leads for 4 s.", bg:backdrop("clouds", { path:false }),
+   ui:`<div class="lb t"></div><div class="lb b"></div><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center" class="shadow"><div class="serif" style="font-size:4cqw;line-height:1">Above the clouds</div><div style="font-size:1cqw;font-weight:300;color:var(--g-dim);margin-top:1cqw">The whole valley under a white sea.</div><div style="width:3.3cqw;height:1px;background:#E9C47E;margin:1.2cqw auto 0"></div></div>` + n(1,"41%","37%"),
+   spec:["Same component as the prototype discovery card (title 76 px, line 18 px, 64 px sun rule drawing in over 2.4 s).","Camera: 4 s ease-in-out pan from the chase pose to the beat's look target, then back over 2 s. If the player steers during the pan, end it early with a 1 s blend.","The first music cue in the game plays here (JOURNEYS J2)."] },
+
+ { id:"ending", title:"Journey ending", when:"Park at the hut. The keeper unloads, lanterns light one per delivered crate, then this card.", bg:backdrop("dusk", { path:false, hut:true, hx:800, hy:640, person:true, px:860, py:640 }),
+   ui:`<div class="lb t"></div><div class="lb b"></div><div style="position:absolute;left:50%;top:36%;transform:translateX(-50%);text-align:center;width:60cqw" class="shadow"><div style="font-size:.8cqw;color:var(--g-dim)">The Long Way Up</div><div class="serif" style="font-size:3.6cqw;margin:.4cqw 0">Five of six made it.</div><div style="font-size:1cqw;font-weight:300;color:var(--g-dim)">The sixth is somewhere on the mountain.</div><div class="lanterns"><i></i><i></i><i></i><i></i><i></i><i class="off"></i></div>
+   <div style="margin-top:2cqw;font-size:.8cqw;color:var(--g-dim)"><span style="display:inline-block;width:.8cqw;height:.8cqw;border-radius:50%;background:#C9643B;vertical-align:middle;margin-right:.5cqw"></span>New paint for the Mule: Monsoon</div></div>
+   <div style="position:absolute;left:6cqw;bottom:13%" class="menu"><span class="f">Back to the Atlas</span><span>Stay a while</span></div>` + n(1,"38%","42%") + n(2,"41%","62%") + n(3,"36%","72%") + n(4,"4cqw","76%"),
+   spec:["Order: lanterns light in the world first, one every 0.7 s with a soft chime. Then the card fades in (1.2 s).","Title line varies with crates delivered (6, 3–5, 0–2). Copy is in JOURNEYS J2.","Lantern glyphs mirror the world lanterns: lit 14×20 px with glow, unlit = outline.","Reward line 15 px with a swatch. Options bottom-left: Back to the Atlas (draws the route on the map) · Stay a while (Wander mode, same place, HUD off)."] },
+
+ { id:"photo", title:"Photo mode", when:"Press P anywhere. The world keeps moving and the vehicle holds still. At a postcard spot the place name appears.", bg:backdrop("golden", { vehicle:true }),
+   ui:`<div class="thirds"></div><div class="ticks"><i style="left:2cqw;top:2cqw;border-left-width:1px;border-top-width:1px"></i><i style="right:2cqw;top:2cqw;border-right-width:1px;border-top-width:1px"></i><i style="left:2cqw;bottom:2cqw;border-left-width:1px;border-bottom-width:1px"></i><i style="right:2cqw;bottom:2cqw;border-right-width:1px;border-bottom-width:1px"></i></div>
+   <div style="position:absolute;right:4cqw;top:3.4cqw;text-align:right" class="shadow"><div style="font-size:.7cqw;color:var(--g-dim)">Postcard spot</div><div class="serif" style="font-size:1.5cqw">The plank bridge</div></div>
+   <div class="pbar"><div>Lens<b>Normal</b></div><div>Time<div class="sl"><i style="left:70%"></i></div></div><div>Focus<div class="sl"><i style="left:35%"></i></div></div><div>Vehicle<b>Shown</b></div><div><kbd>Space</kbd> take &nbsp; <kbd>Esc</kbd> back</div></div>` + n(1,"3cqw","3cqw") + n(2,"80%","3cqw") + n(3,"30%","88%"),
+   spec:["Frame: four 38 px corner ticks (1 px, 75%) + rule-of-thirds lines at 14%. Hide all with H.","Postcard spot: shown when the camera is within the spot's volume. Kicker 13 px + name Marcellus 29 px, top-right.","Bar: Lens (Wide 30° / Normal 45° / Close 70°), Time (±1.5 h nudge, local to photo mode), Focus (DOF distance), Vehicle (Shown/Hidden). Camera: free orbit + dolly within 12 m of the vehicle.","Take: white flash at 35% for 0.25 s, then the photo card (next board)."] },
+
+ { id:"postcard", title:"Postcard saved", when:"Right after taking a photo.", bg:backdrop("golden", { vehicle:true }),
+   ui:`<div style="position:absolute;right:3cqw;bottom:3cqw;transform:rotate(-2deg);background:#F6F0E2;padding:.5cqw .5cqw .7cqw;box-shadow:0 1cqw 2cqw rgba(0,0,0,.3);width:13cqw;color:#2F2B24">${backdrop("golden",{vehicle:true}).replace('class="bg"','style="display:block;width:100%;height:7.3cqw"')}<div class="serif" style="font-size:.85cqw;margin-top:.4cqw">The plank bridge</div><div style="font-size:.6cqw;opacity:.55">Saved to the journal</div></div>` + n(1,"80%","58%"),
+   spec:["The captured frame shrinks into a paper postcard that slides to the bottom-right (0.9 s ease) with a −2° tilt, holds 2.5 s, then slides off right.","Named spot = place name in Marcellus; elsewhere = the region name + time of day (\"Kettle Peak, golden hour\").","Stored as a 640 px JPEG data URL in IndexedDB (localStorage is too small). The Journal tab reads from there."] },
+
+ { id:"loading", title:"Loading a region", when:"Between the Atlas and a journey. Paper, not a spinner.", bg:`<div class="paper" style="position:absolute;inset:0"></div>`,
+   ui:`<div style="position:absolute;inset:0;color:#2F2B24;display:grid;place-items:center"><div style="text-align:center"><svg viewBox="0 0 200 120" style="width:18cqw"><path d="M40 100 L100 20 L160 100" fill="none" stroke="#2F2B24" stroke-width="1.4"/><path d="M52 92 Q100 104 148 88 Q120 78 70 82 Q96 70 132 70 Q110 58 84 60 Q100 46 116 44" fill="none" stroke="#B5843A" stroke-width="1.4" stroke-dasharray="2 3"/></svg><div class="serif" style="font-size:2.6cqw;margin-top:1cqw">Kettle Peak</div><div style="font-size:.9cqw;font-weight:300;opacity:.66;margin-top:.4cqw">The road goes round three and a half times before it gives up.</div><div style="width:16cqw;height:1px;background:rgba(47,43,36,.2);margin:1.8cqw auto 0;position:relative"><i style="position:absolute;left:0;top:0;height:1px;width:58%;background:#2F2B24"></i></div></div></div>` + n(1,"38%","22%") + n(2,"34%","74%"),
+   spec:["Ink sketch of the region (one SVG per region) + name 50 px Marcellus + one atmospheric line 17 px. No tips, no percentages.","1 px progress hairline 300 px wide, filling in ink. When ready, the paper fades to the intro board over 1.2 s."] },
+
+ { id:"mobile", title:"Touch controls", when:"Coarse pointer. Landscape only (portrait shows a calm \"Turn your phone sideways\").", bg:backdrop("morning", { vehicle:true }),
+   ui:`<div class="scrim"></div><div class="obj">Take the crates up to the hut</div>${glyph(["","","","","",""]).replace('class="glyphs ','style="bottom:14cqw" class="glyphs ')}<div class="stick" style="left:8cqw;bottom:6cqw"><i></i></div><div class="tbtn" style="right:4cqw;bottom:5cqw">Brake</div><div class="tbtn" style="right:10cqw;bottom:9cqw">E</div><div class="tbtn" style="right:4cqw;top:4cqw;width:3cqw;height:3cqw;font-size:.65cqw">P</div>` + n(1,"7cqw","62%") + n(2,"89%","80%") + n(3,"79%","72%") + n(4,"91%","10%"),
+   spec:["Floating stick: appears where the left thumb lands (left 45% of the screen), 115 px ring, 38 px knob, 50 px travel.","Brake: 84 px circle bottom-right, 18% fill. E (load/sit) appears only when an action is available, with the hold ring on the button itself.","Photo: small 58 px button top-right. Cargo glyphs sit above the stick zone.","All touch targets ≥ 48 px; safe-area insets respected."] },
+
+ { id:"dev", title:"Dev panel (F3)", when:"For building and testing only: Claude Code uses it to check its own work and the user uses it to set up screenshots. Stripped from production builds.", bg:backdrop("fog", { vehicle:true }),
+   ui:`<div class="dev"><h4>HINTERLAND · DEV</h4><div class="row"><span>fps 61</span><span>frame 9.8 ms</span><span>draws 212</span><span>tris 1.4M</span></div>
+   <div class="sec"><div class="row"><span>journey</span><span>J2 long-way-up</span></div><div class="row"><span>progress</span><span>0.62 · turn 3</span></div><div class="bar"><i></i></div><div><span class="chip">orchard</span><span class="chip">log</span><span class="chip">bridge</span><span class="chip on">bell poles</span><span class="chip">hairpin</span><span class="chip">clouds</span><span class="chip">hut</span></div></div>
+   <div class="sec"><div class="row"><span>time</span><span>14:20 · tod 2.31</span></div><div class="bar"><i style="width:58%"></i></div><div><span class="chip">clear</span><span class="chip on">fog band</span><span class="chip">snow</span><span class="chip">rain</span></div></div>
+   <div class="sec"><div class="row"><span>vehicle</span><span>mule · 8.2 m/s · lat 3.1 m/s²</span></div><div><span class="chip">rover</span><span class="chip on">mule</span><span class="chip">snowcat</span></div><div style="margin-top:.3cqw"><span class="chip">cargo 5/6</span><span class="chip">drop all</span><span class="chip">reload all</span><span class="chip">reset</span></div></div>
+   <div class="sec"><span class="chip on">colliders</span><span class="chip">spline</span><span class="chip on">triggers</span><span class="chip">free cam</span><span class="chip">hide UI</span><span class="chip">slow-mo</span></div>
+   <div class="sec" style="color:#9FB3BD">F3 panel · F4 free cam · F6 hide UI · [ ] scrub progress · T time · 1–7 teleport</div></div>` + n(1,"76%","3cqw") + n(2,"76%","24%") + n(3,"76%","44%") + n(4,"76%","60%") + n(5,"76%","78%"),
+   spec:["Stats: fps, frame ms, draw calls, triangles (renderer.info).","Journey: id, progress, turn; scrub bar; one chip per beat = teleport there.","Time slider + weather chips.","Vehicle: swap, live speed + lateral accel (for tuning tippiness); cargo tools.","Debug toggles: Rapier colliders, route spline, trigger volumes, free cam, hide UI, slow-mo 0.25×. Keyboard shortcuts at the bottom. Only behind import.meta.env.DEV."] }
+];
+
+/* ---------- part 2: new mechanics ---------- */
+const reticle = (state) => `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="none" stroke="${state === "lock" ? "#E9C47E" : "rgba(244,239,229,.55)"}" stroke-width="1.2" ${state === "lock" ? "" : 'stroke-dasharray="3 4"'}/><circle cx="20" cy="20" r="1.6" fill="#F4EFE5"/></svg>`;
+B.push(
+ { id:"roster", title:"Choose a vehicle", when:"Before free-roam, and in journeys that let you pick. Lives in the Garage tab and pops up on the Atlas when you choose Wander here.", bg:backdrop("golden", { path:false }),
+   ui:`<div class="lb t"></div><div class="lb b"></div><div style="position:absolute;left:0;right:0;top:38%;display:flex;justify-content:center;gap:5cqw">${["Rover","Mule","Tortoise","The Loaf","Sky Mule","Snowcat"].map((v,i)=>`<div style="text-align:center;opacity:${i===2?1:i<4?.55:.28}"><div style="width:${i===2?8:5}cqw;height:${i===2?4.5:3}cqw;margin:0 auto .8cqw;border-radius:1cqw;background:${i<4?"rgba(244,239,229,.85)":"transparent"};border:1px ${i<4?"solid":"dashed"} rgba(244,239,229,.6)"></div><div class="${i===2?"serif":""}" style="font-size:${i===2?1.8:.85}cqw">${i<4?v:"Not found yet"}</div></div>`).join("")}</div>
+   <div class="vcard" style="left:50%"><b>The Tortoise</b>Slow, round and homely. Makes camp anywhere flat.</div>` + n(1,"47%","30%") + n(2,"60%","74%"),
+   spec:["Horizontal strip of vehicles shown as 3D turntables (not icons). The selected one is 1.6× larger and fully opaque, the others 55%; locked ones are dashed outlines labelled \"Not found yet\".","←/→ or swipe moves between them with a 0.7 s ease, the camera dollies to the selected model, and a name + one-line character note appear below. Enter = drive."] },
+
+ { id:"transform", title:"Transformation (wings out)", when:"On a launch ridge (marked by a windsock + flat stone ramp). The Mule's Sky Kit or the Rover's glider. The same pattern is used for boat mode at a slipway.", bg:backdrop("clouds", { vehicle:true, vx:740, vy:600 }),
+   ui:`<div class="prompt" style="left:42%;top:56%"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="none" stroke="rgba(244,239,229,.3)" stroke-width="1.5"/><circle cx="18" cy="18" r="16" fill="none" stroke="#E9C47E" stroke-width="1.5" stroke-dasharray="100" stroke-dashoffset="25" pathLength="100"/></svg><span>T</span></div>Hold to unfold the wings</div>
+   <div class="lb t" style="height:6%"></div><div class="lb b" style="height:6%"></div>` + n(1,"40%","50%") + n(2,"2cqw","2cqw"),
+   spec:["Prompt shows only when you're stopped on a launch ridge (world trigger). Hold T for 1.2 s; the ring fills.","Then: letterbox in to 6%, camera swings to a ¾ front view, wings unfold (3 s, smooth, parts move in sequence: roof latches → wings → struts → tail → prop spins up), letterbox out, control returns in flight mode. Reverse on landing: hold T when stopped."] },
+
+ { id:"flight", title:"Flight HUD", when:"Sky Mule and the Rover glider. Still minimal: no gauges, no numbers.", bg:backdrop("clouds", { path:false }),
+   ui:`<div class="scrim"></div><div class="obj">Fly to the light on Kettle Peak</div>
+   <div class="ribbon"><div class="band" style="top:52%;height:12%"></div><small style="top:58%">clouds</small><div class="goal" style="top:20%"></div><small style="top:20%">the hut</small><div class="me" style="top:66%"></div></div>
+   <div class="puff"><i></i><i></i><i class="e"></i></div>
+   <div style="position:absolute;left:58%;top:34%;width:4cqw;height:22cqw;background:linear-gradient(transparent,rgba(255,240,210,.2),transparent);filter:blur(.6cqw)"></div><div style="position:absolute;left:62%;top:30%;font-size:.7cqw;color:var(--g-dim);text-shadow:0 1px 8px rgba(0,0,0,.5)">rising air</div>
+   <div class="keys"><div><kbd>W</kbd><kbd>S</kbd> nose down / up</div><div><kbd>A</kbd><kbd>D</kbd> bank</div><div><kbd>Space</kbd> prop puff</div></div>` + n(1,"3.6cqw","18%") + n(2,"3.4cqw","80%") + n(3,"56%","30%") + n(4,"58%","1.2cqw"),
+   spec:["Altitude ribbon: left edge 1 px line, 20–80% height. Dot = you, sun diamond = destination height, a soft band = the cloud layer. Labels 12 px only for the band and the goal.","Puff: 3 dots under the ribbon. Space spends one for a 4 s climb; they refill slowly, and quickly while in rising air. No fuel bar, no stall warning text.","Thermals are shown in the world (shimmer column, seeds and birds circling), with a tiny \"rising air\" label the first 2 times only.","Feel cues instead of numbers: wind pitch rises with speed, FOV +4° fast, wing-tip flutter when slow. If slow for 3 s: one gentle hint, \"Nose down to pick up speed\", once per session."] },
+
+ { id:"birds", title:"Birds ahead", when:"Flock zones in J9 Sky Road. Never a fail, just a bump and scattered feathers.", bg:backdrop("golden", { path:false }),
+   ui:`${[...Array(16)].map((_,i)=>`<div style="position:absolute;left:${48+Math.sin(i*1.7)*10+i*.8}%;top:${34+Math.cos(i*2.3)*8}%;width:1.1cqw;height:.35cqw;border-top:2px solid #2B2A2E;border-radius:50% 50% 0 0"></div>`).join("")}${glyph(["lit","","","","","",""])}<div class="edges" style="box-shadow:inset 0 0 4cqw rgba(255,255,255,.35)"></div>` + n(1,"60%","26%") + n(2,"1cqw","80%"),
+   spec:["Flocks are visible from about 150 m and fly in murmuration patterns. Steering through gaps is the skill.","Contact: bird scatter animation, a camera shake of 0.25, a soft white edge vignette for 0.4 s, feathers drifting, and cargo glyphs flash if a crate shifts. Crates can fall in flight only on a direct hit while banking hard (rare)."] },
+
+ { id:"storm", title:"Thunderstorm", when:"J9 Sky Road and J13 The Lighthouse. Darker, louder and wetter, but still calm UI.", bg:backdrop("night", { path:false, sunX:1300, sunY:120 }),
+   ui:`<div class="rain"></div><div class="flash"></div><div class="scrim"></div><div class="obj" style="opacity:1">Weather coming in</div>
+   <div class="ribbon"><div class="band" style="top:30%;height:30%;background:rgba(80,90,110,.5)"></div><small style="top:44%">storm</small><div class="me" style="top:68%"></div></div>
+   <div style="position:absolute;left:66%;top:58%;width:1cqw;height:1cqw;border-radius:50%;background:#FFC874;box-shadow:0 0 2cqw 1cqw rgba(255,200,116,.6)"></div><div style="position:absolute;left:68%;top:57%;font-size:.75cqw;color:var(--g-dim)">the beacon</div>` + n(1,"57%","1.2cqw") + n(2,"3.6cqw","40%") + n(3,"64%","52%"),
+   spec:["Arrival: the objective line swaps to \"Weather coming in\" for 5 s (the only text), then back.","The storm cell is shown on the altitude ribbon as a dark band, so you choose to fly under it or around it. Inside: rain streaks (screen-space, 18% white), a darker grade, turbulence bumps every 2–5 s, lightning = 0.12 s flash + thunder 1–3 s later.","A warm beacon light (world object) on the destination stays visible through the rain: your guide. As you exit the storm, the light comes back over 6 s and the wipers stop."] },
+
+ { id:"landing", title:"Landing approach", when:"Within 300 m of a landing spot (hut platform, meadow, beach).", bg:backdrop("dusk", { path:false, hut:true, hx:900, hy:600 }),
+   ui:`${[...Array(7)].map((_,i)=>`<div style="position:absolute;left:${40+i*6.2}%;top:${42+i*3.6}%;width:${.4+i*.07}cqw;height:${.4+i*.07}cqw;border-radius:50%;background:#FFE2A8;opacity:${.25+i*.1};box-shadow:0 0 .8cqw #FFC874"></div>`).join("")}
+   <div style="position:absolute;left:52%;top:64%;width:10cqw;height:2.4cqw;border:1px solid rgba(255,226,168,.8);border-radius:50%"></div>
+   <div class="prompt" style="left:43%;top:76%"><kbd>S</kbd>&nbsp;ease the nose up as you touch down</div>` + n(1,"38%","38%") + n(2,"62%","60%") + n(3,"41%","82%"),
+   spec:["Glide path: 7 small warm lights floating in the air (world objects, not HUD) showing a comfortable 6° descent. They fade as you pass them.","Landing ring painted on the ground in light; touching down inside it = smooth auto-flare. Outside = a bumpy but safe landing.","The hint shows on the first 2 landings only."] },
+
+ { id:"winch-aim", title:"Grapple winch: aim", when:"Hold right mouse (or L2) near boulders. Only iron anchor rings can be hooked.", bg:backdrop("morning", { vehicle:true, vx:640, vy:650 }),
+   ui:`<div class="reticle" style="left:58%;top:36%">${reticle("lock")}</div><div style="position:absolute;left:58%;top:36%;transform:translate(1.6cqw,-50%);font-size:.75cqw;color:var(--g-ink);text-shadow:0 1px 8px rgba(0,0,0,.6)">&nbsp;&nbsp;14 m</div>
+   <svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 56"><path d="M44 42 Q50 26 58 20.5" fill="none" stroke="rgba(244,239,229,.55)" stroke-width=".25" stroke-dasharray="1 1.2"/></svg>
+   <div class="reticle" style="left:30%;top:30%;opacity:.4">${reticle("free")}</div>
+   <div class="keys"><div>release <kbd>RMB</kbd> to throw</div></div>` + n(1,"60%","26%") + n(2,"48%","46%") + n(3,"28%","22%"),
+   spec:["Reticle (68 px ring) snaps to the nearest anchor ring within 18 m and on screen. Locked = solid sun ring + distance label. Unlocked / out of range = dashed at 55%.","Throw preview: a dotted arc from the winch to the target (the hook's flight path).","Other anchors in view show a dim dashed ring so you can read the route up the boulder garden."] },
+
+ { id:"winch-haul", title:"Grapple winch: haul", when:"Hook latched. Pull yourself up and over.", bg:backdrop("morning", { vehicle:true, vx:700, vy:540 }),
+   ui:`<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 56"><path d="M46 36 L60 18" stroke="#2B2A27" stroke-width=".35"/></svg>
+   <div style="position:absolute;left:50%;top:50%;width:6cqw;height:6cqw;transform:translate(-50%,-50%)"><svg viewBox="0 0 40 40" style="width:100%;height:100%;transform:rotate(-90deg)"><circle cx="20" cy="20" r="17" fill="none" stroke="rgba(244,239,229,.2)" stroke-width="1"/><circle cx="20" cy="20" r="17" fill="none" stroke="#E9C47E" stroke-width="1.4" pathLength="100" stroke-dasharray="100" stroke-dashoffset="38"/></svg></div>
+   <div class="keys"><div><kbd>W</kbd> reel in &nbsp;<kbd>S</kbd> let out</div><div><kbd>Q</kbd> let go</div></div>` + n(1,"53%","40%") + n(2,"84%","80%"),
+   spec:["The tension arc (115 px, centre of the screen, 20% track) fills with cable tension. Near full, the cable creaks and the arc turns warmer; it never snaps. At max, the winch just slips (gentle).","The cable is drawn in the world (straight under load, catenary when slack). Reaching the top: the hook auto-releases when all 4 wheels are on top, with a little bump and a satisfied engine note."] },
+
+ { id:"orders", title:"Hut Rounds: order slips", when:"J5 Hut Rounds and replayable rounds afterwards. Paper slips instead of a quest log.", bg:backdrop("morning", { vehicle:true }),
+   ui:`<div class="slips"><div class="slip"><b>Tea house</b>2 sacks of flour · 1 tin of sugar</div><div class="slip"><b>Beekeeper</b>12 empty jars</div><div class="slip done"><b>Weather station</b>Batteries, paper roll</div><div class="slip"><b>Bakery</b>Firewood, a bundle</div></div>${glyph(["","","","",""])}` + n(1,"1cqw","16%") + n(2,"1cqw","46%"),
+   spec:["Up to 4 slips, top-left, paper with a tiny tilt and a soft shadow. Hut name in Marcellus 17 px, items in 13 px.","They hide while driving fast (like the objective) and show when stopped or on Tab. Delivered = strikethrough at 55%, then it slides away after 2 s.","Loading at the depot: drive onto the loading pad, the crates swing on by crane (2 s), and the slips get a tick."] },
+
+ { id:"hutvisit", title:"Hut visit", when:"Deliver to a hut. Unload, chat, receive a gift, get a stamp.", bg:backdrop("golden", { path:false, hut:true, hx:780, hy:620, person:true, px:860, py:640 }),
+   ui:`<div class="lb t"></div><div class="lb b"></div><div class="speech" style="left:54%;top:30%"><small>Odo, the beekeeper</small><p>Jars! The bees have been impatient. Take some honey for the bakery.</p></div>
+   <div style="position:absolute;left:6cqw;bottom:14%;display:flex;align-items:center;gap:2cqw" class="shadow"><div><div style="font-size:.75cqw;color:var(--g-dim)">Given</div><div style="font-size:1cqw">12 empty jars</div></div><div style="font-size:1.4cqw;color:var(--g-sun)">→</div><div><div style="font-size:.75cqw;color:var(--g-dim)">Received</div><div style="font-size:1cqw">3 pots of honey</div></div></div>
+   <div style="position:absolute;right:6cqw;bottom:12%;background:#ECE3CF;padding:1cqw;transform:rotate(3deg)"><div class="stamp gold">BEEKEEPER<br>★<br>autumn</div></div>` + n(1,"45%","26%") + n(2,"4cqw","76%") + n(3,"86%","64%"),
+   spec:["Keeper line as the traveler component. Given → Received row bottom-left (Jost 20 px values). Received items go onto the rack as new cargo for another hut, so the rounds chain together.","Stamp: a passport page slides in from the right, the stamp presses down (0.25 s, a small ink-spread scale 1.08 → 1, no bounce), holds 2 s, then slides away.","First visit to each hut = a slow camera moment around the hut."] },
+
+ { id:"passport", title:"Stamp passport (Journal tab)", when:"Atlas → Journal → Stamps. Collecting without counting.", bg:`<div class="paper" style="position:absolute;inset:0"></div>`,
+   ui:`<div style="position:absolute;inset:0;color:#2F2B24;padding:3cqw 5cqw"><div class="serif" style="font-size:2.2cqw">Stamps</div><div style="font-size:.8cqw;opacity:.6;margin:.3cqw 0 2cqw">Every hut you've helped, and the season you visited.</div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2cqw;justify-items:center">${[["","TEA HOUSE<br>☕<br>spring"],["blue","WEATHER<br>⌁<br>spring"],["gold","BEEKEEPER<br>★<br>autumn"],["green","BAKERY<br>◐<br>summer"],["ink","STARWATCH<br>✦<br>winter"],["","KETTLE<br>PEAK<br>hut"],["empty","?"],["empty","?"],["empty","?"],["empty","?"],["empty","?"],["empty","?"]].map(([c,t])=>`<div class="stamp ${c}">${t}</div>`).join("")}</div></div>`,
+   spec:["Paper page, 6 per row, each stamp in its hut's own colour and a little emblem, with the season of the visit. Unvisited = a dashed circle with \"?\".","Revisiting in a new season adds a second, overlapping stamp. People will chase all four seasons of each hut."] },
+
+ { id:"camp", title:"Make camp (Tortoise)", when:"Tortoise stopped on flat ground: hold E. The tent pops up, the awning rolls out, chairs appear.", bg:backdrop("dusk", { path:false, vehicle:true, vx:720, vy:640, fire:true, fx:980, fy:700 }),
+   ui:`<div class="lb t"></div><div class="lb b"></div><div class="radial"><span class="f" style="left:50%;top:6%">Light the lantern</span><span style="left:94%;top:50%">Cook something</span><span style="left:50%;top:94%">Sleep until morning</span><span style="left:6%;top:50%">Take a photo</span></div><div style="position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);text-align:center" class="shadow"><div class="serif" style="font-size:1.3cqw">Camp</div><div style="font-size:.65cqw;color:var(--g-dim)">Saved</div></div>` + n(1,"50%","25%") + n(2,"55%","48%"),
+   spec:["A radial menu with 4 options in plain text (no wedges). Mouse direction, stick or arrow keys pick; Enter confirms. The centre shows \"Camp\" + Saved.","Light the lantern: warm light + moths. Cook: a small pan scene with steam, 8 s. Sleep: fade to morning with birdsong. Photo: opens photo mode framed on the camp.","Camp can be made anywhere flat. It's a portable campfire."] },
+
+ { id:"boat", title:"On the water (Lantern River)", when:"Rover boat mode (J4, J7). River current and shrines.", bg:backdrop("dusk", { path:false }),
+   ui:`<div class="scrim"></div><div class="obj">Set a lantern at each shrine</div>
+   <div style="position:absolute;left:2.4cqw;bottom:2.2cqw;display:flex;gap:.8cqw">${[1,1,0,0,0].map(o=>`<i style="width:.7cqw;height:1cqw;border-radius:.2cqw;${o?"background:#FFC874;box-shadow:0 0 1cqw #FFB24A":"border:1px solid rgba(244,239,229,.35)"}"></i>`).join("")}</div>
+   <div class="prompt" style="left:58%;top:52%"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="none" stroke="rgba(244,239,229,.3)" stroke-width="1.5"/></svg><span>E</span></div>Hold to set the lantern</div>
+   <svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 100 56">${[0,1,2].map(i=>`<path d="M${30+i*6} ${44-i} l2 -1 l-2 -1" fill="none" stroke="rgba(244,239,229,.35)" stroke-width=".25"/>`).join("")}</svg>` + n(1,"1cqw","80%") + n(2,"56%","46%") + n(3,"30%","74%"),
+   spec:["Lantern glyphs replace the cargo glyphs: one per shrine, lit once set.","Shrine prompt as the cargo prompt. Setting a lantern: it floats off downstream and keeps glowing in the world, so you see your trail behind you.","Current is shown by foam streaks and floating petals (world), plus faint chevrons on the water in strong currents only."] },
+
+ { id:"ice", title:"Thin ice (First Snow)", when:"Snowcat on the frozen lake above 6 m/s. A warning with no text.", bg:backdrop("morning", { path:false, vehicle:true }),
+   ui:`<div class="edges"></div><svg class="cracks" viewBox="0 0 100 56" preserveAspectRatio="none"><path d="M0 50 L6 46 L9 48 L14 43 M0 8 L5 11 L7 9 L12 13 M100 48 L94 45 L91 47 L86 42 M100 6 L95 10 L92 8" fill="none" stroke="rgba(255,255,255,.7)" stroke-width=".25"/></svg>` + n(1,"6%","78%"),
+   spec:["Frosty screen edges plus hairline cracks drawing inward from the corners as speed passes 6 m/s, with the ice creak sound rising. Slow down and they melt back over 1.5 s.","The ice never breaks. The world shows cracks under the tracks too. No text ever."] },
+
+ { id:"night", title:"Night driving (Firefly Road)", when:"Night journeys. The HUD dims; the world leads.", bg:backdrop("night", { vehicle:true }),
+   ui:`<div class="obj" style="opacity:.45">Follow the small lights</div>${[...Array(14)].map((_,i)=>`<i style="position:absolute;left:${52+i*2.4+Math.sin(i)*2}%;top:${50-i*1.6+Math.cos(i*1.3)*3}%;width:.35cqw;height:.35cqw;border-radius:50%;background:#E8F7A0;box-shadow:0 0 .8cqw .3cqw rgba(220,250,140,.6);opacity:${1-i*.05}"></i>`).join("")}` + n(1,"58%","1.2cqw") + n(2,"80%","26%"),
+   spec:["At night all HUD opacity × 0.7, and the objective sits at 45%.","Fireflies = the guide: a loose trail of 20–40 particles drifting ahead, brightest nearest you. Headlights matter: real SpotLights with soft cones, and moths in the beams."] },
+
+ { id:"bus", title:"Bus stops + passengers", when:"J10 Market Day in the Loaf. Pull in, open the doors, people board.", bg:backdrop("morning", { vehicle:true, vx:760, vy:640, person:true, px:620, py:650 }),
+   ui:`<div class="scrim"></div><div style="position:absolute;left:2.2cqw;top:2.2cqw;background:#F3EBD8;color:#2F2B24;padding:.6cqw .9cqw;transform:rotate(-1.5deg);box-shadow:0 .5cqw 1.2cqw rgba(0,0,0,.25)"><div style="font-size:.6cqw;opacity:.6">Next stop</div><div class="serif" style="font-size:1.2cqw">Hollin Bridge</div><div style="font-size:.55cqw;opacity:.55;margin-top:.2cqw">then Vine Row · The School · Fairground</div></div>
+   <div style="position:absolute;left:2.4cqw;bottom:2.2cqw;display:grid;grid-template-columns:repeat(6,.8cqw);gap:.4cqw;opacity:.75">${[...Array(12)].map((_,i)=>`<i style="width:.8cqw;height:.8cqw;border-radius:50%;${i<7?"background:#F4EFE5":"border:1px solid rgba(244,239,229,.4)"}"></i>`).join("")}</div>
+   <div class="prompt" style="left:40%;top:60%"><div class="ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="none" stroke="rgba(244,239,229,.3)" stroke-width="1.5"/><circle cx="18" cy="18" r="16" fill="none" stroke="#E9C47E" stroke-width="1.5" stroke-dasharray="100" stroke-dashoffset="55" pathLength="100"/></svg><span>E</span></div>Hold to open the doors</div>
+   <div class="speech" style="left:66%;top:22%"><small>Mrs Ferro, row 3</small><p>Ring-ring! That's me at the bridge, love.</p></div>` + n(1,"1cqw","1cqw") + n(2,"1cqw","80%") + n(3,"38%","54%") + n(4,"58%","18%"),
+   spec:["Ticket (paper, top-left, −1.5° tilt): \"Next stop\" 11 px + stop name Marcellus 23 px + the next 3 stops in 10 px. A new ticket slides in after each stop.","Seat dots: 12 small circles bottom-left, filled = passenger aboard. They pulse once when someone boards or leaves.","Doors: hold E in the lay-by (ring prompt). The doors fold open (1 s), passengers walk on with their things, the doors close, then a soft bell.","Bell requests: a passenger line + a ding. Comfort is reactions only: humming on smooth roads, \"Steady!\" and a flapping chicken on big bumps. No score."] },
+ { id:"forecast", title:"Forecast (Weather station)", when:"After helping the weather station: rest anywhere and pick tomorrow's weather.", bg:backdrop("morning", { path:false }),
+   ui:`<div class="lb t"></div><div class="lb b"></div><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:4cqw;text-align:center" class="shadow">${[["Clear","sun all day"],["Mist","mornings in cloud"],["Rain","soft, then a rainbow"],["First snow","high ground only"]].map(([a,b],i)=>`<div style="opacity:${i===2?1:.6}"><div class="serif" style="font-size:${i===2?2:1.3}cqw">${a}</div><div style="font-size:.75cqw;color:var(--g-dim)">${b}</div>${i===2?'<div style="width:2.4cqw;height:1px;background:#E9C47E;margin:.6cqw auto 0"></div>':""}</div>`).join("")}</div>` + n(1,"46%","38%"),
+   spec:["Four forecast choices as plain text; the selected one is larger with a sun rule. Picking one schedules that weather for the next in-game day in every region.","It gives the player control over mood. People pick rain on purpose."] },
+
+ { id:"settings2", title:"Settings (complete)", when:"From the title or pause. Replaces the prototype's short list.", bg:backdrop("golden", { path:false }),
+   ui:`<div style="position:absolute;inset:0;background:rgba(16,22,28,.55);backdrop-filter:blur(6px)"></div><div style="position:absolute;left:6cqw;top:12%;right:6cqw;display:grid;grid-template-columns:repeat(4,1fr);gap:3cqw;font-size:.8cqw" class="shadow">${[["Graphics",["Quality: Low · Medium · High · Ultra","Resolution scale","Frame cap 30 / 60 / unlimited","Motion blur off","Depth of field (photo only)"]],["Sound",["Master","Nature","Engine","Music cues","Traveler voices (hums)"]],["Controls",["Rebind keys","Hold or tap for actions","Invert flight pitch","Camera sensitivity","Controller layout"]],["Comfort",["Camera motion: Full · Calm","Text size S · M · L","Traveler lines on/off","High-contrast prompts","Colour-safe markers"]]].map(([h,rows])=>`<div><div class="serif" style="font-size:1.5cqw;margin-bottom:1.2cqw">${h}</div>${rows.map(r=>`<div style="color:var(--g-dim);padding:.45cqw 0;border-bottom:1px solid rgba(244,239,229,.12)">${r}</div>`).join("")}</div>`).join("")}</div>` + n(1,"5cqw","10%") + n(2,"78%","10%"),
+   spec:["Four columns of plain rows, the same segmented and slider controls as the prototype. Every change applies live with no restart.","Comfort matters for a 3–4 h game: Calm camera, text size, hold/tap, invert pitch for flight, and colour-safe prompt shapes (rings and diamonds, never colour alone)."] }
+);
+
+/* ---------- part 3: one sheet per journey ---------- */
+const LEVELS = [
+ ["1","The Overlook","morning","Rover","Valley · morning","Find a way up to the light on the ridge","Discovery cards (Highfall, The Overlook, The Tarn)","\"Everything you crossed, and everything you haven't.\"","Rover paint \"Dawn\""],
+ ["2","The Long Way Up","clouds","Mule","Kettle Peak spiral · morning → sunset","Take the crates up to the hut","HUD + ascent line, cargo glyphs + reload prompt, bell poles in fog, camera moment above the clouds","Lanterns per crate · \"Five of six made it.\"","Mule paint \"Monsoon\", Rover roof lantern"],
+ ["3","Boulder Garden","morning","Rover + grapple winch","Giant mossy boulders over a gorge · late morning","Get across to the old bridge","Winch aim + haul boards; anchor rings glint; a route you read from the rocks","Drive across the restored bridge at noon · \"The gorge is easier the second time.\"","Winch mod (keeps it on the Rover forever)"],
+ ["4","Lantern River","dusk","Rover (boat mode)","River gorge → lake village · dusk → blue hour","Set a lantern at each shrine","Transformation at the slipway, boat HUD with lantern glyphs, current streaks","Hundreds of lanterns on the lake · \"The village counts five new lights.\"","Boat horn, paint \"Ember\""],
+ ["5","Hut Rounds","golden","Mule","High meadow ridge with 5 huts (tea, weather, bakery, bees, stars)","Deliver what the huts asked for","Order slips, depot loading pad, hut visits, stamps; gifts chain into the next deliveries","All five huts light up along the ridge at dusk · \"The ridge knows your engine now.\"","Stamp passport, Mule rack lights; rounds become replayable"],
+ ["6","Firefly Road","night","Rover","Old forest · night","Follow the small lights","Night HUD, fireflies as guide, headlights, owl + deer moments","Meteor shower over the observatory glade","Fog lamps, star charm"],
+ ["7","Lake of Islands","morning","Rover (boat mode)","Lake with 9 islands, ferries and jetties · morning","Deliver the island post","Mail bag glyphs, jetty landings, splash/wake, island postcards","Every island's flag goes up as you pass · \"The post is early for once.\"","A mail-bag rack for the Rover"],
+ ["8","First Snow","morning","Snowcat","High pass · winter afternoon → snowy night","Firewood for the cabin before the pass closes","Thin ice board, snowfall build, drifts, sled glyphs","Cabin windows glow in the blue night","Snow tyres, scarf on the mirror"],
+ ["9","Sky Road","clouds","Sky Mule","From the valley up past Kettle Peak, through cloud and storm","Fly the parcels to the sky hut","Transformation, flight HUD, thermals, birds ahead, thunderstorm, beacon, landing approach","Land on the hut's sky platform as the storm clears into a rainbow · \"The keeper didn't think it could be done.\"","Sky Kit for the Mule in free roam"],
+ ["10","Market Day","morning","The Loaf (village bus)","Hill villages → the autumn fair · morning → dusk","Get everyone to the market","Bus ticket + seat dots, door prompt, bell requests, passenger chatter, level crossing moment","The fair at dusk, everyone waving · \"Not a single egg broken.\"","The Loaf for free roam, roof rack items"],
+ ["11","The Salt Mirror","golden","Rover","Wet salt flat + dunes · sunrise","Find the oasis among the mirages","Mirages that fade on approach, wide-open speed","Driving across a reflected sunrise sky","Wide sand tyres, roof kite"],
+ ["12","Slow Coast","dusk","Tortoise","Coastal road with coves · afternoon → night","Make camp at three coves","Make-camp radial, cooking, tide pools, sunset camera moments","Night at the last cove: stars, waves, the lantern on · \"Nowhere to be. Nowhere you'd rather.\"","The Tortoise for free roam, an awning colour"],
+ ["13","The Lighthouse","night","Mule","Coastal cliffs · storm → clear sunset","Bring the generator to the lighthouse","Storm board, wipers, a single heavy cargo glyph","The beam comes on and sweeps the sea under a rainbow","Mule paint \"Harbour\", Rover wipers"],
+ ["14","Above the Clouds","golden","Sky Mule (or Rover glider)","The whole world · golden hour","Everywhere you have been, all at once","Flight HUD only; landmarks light as you pass; credits as place names in the sky","Land at the first Overlook as the sun sets","Free choice of every vehicle in every region"],
+ ["15","Valley of Flowers","morning","Rover","Snow pass → flower valley → lake with a stupa · any time (try night)","Follow the stone path down into the valley","Discovery cards (The valley opens, Meltwater, The stone bridge), time picker, snow ruts, splash, plants parting (see reference/flowers.html)","\"Lake of the sky.\" · flags, stupa lamps, sky lanterns at night","Prayer flags for any rack, paint \"Poppy\""]
+];
+const toc = document.getElementById("toc");
+function render(list, container, start){
+  list.forEach((b, i) => {
+    const s = document.createElement("section"); s.className = "board"; s.id = b.id;
+    s.innerHTML = `<h2>${start + i + 1}. ${b.title}</h2><p class="when">${b.when}</p><div class="screen">${b.bg}<div class="ui">${b.ui}</div></div><ol>${b.spec.map(x => `<li>${x}</li>`).join("")}</ol>`;
+    container.appendChild(s);
+    const a = document.createElement("a"); a.href = "#" + b.id; a.textContent = b.title; toc.appendChild(a);
+  });
+}
+const split = B.findIndex(b => b.id === "roster");
+render(B.slice(0, split), document.getElementById("boards"), 0);
+render(B.slice(split), document.getElementById("boards2"), split);
+const lvRoot = document.getElementById("levels");
+LEVELS.forEach(([num, name, bgk, veh, where, obj, ui, end, reward]) => {
+  const d = document.createElement("article"); d.className = "lv"; d.id = "j" + num;
+  d.innerHTML = `<div class="pic">${backdrop(bgk, { path: bgk !== "clouds", vehicle: true, vs: .8 })}<div class="t"><small>Journey ${num}</small><b>${name}</b></div></div>
+  <dl><dt>Vehicle</dt><dd>${veh}</dd><dt>Where / when</dt><dd>${where}</dd><dt>Objective line</dt><dd>${obj}</dd><dt>Screens used</dt><dd>${ui}. Plus, every journey: intro card (1), HUD (2), loading paper (10), ending card (7), photo + postcards (8–9).</dd><dt>Ending card</dt><dd>${end}</dd><dt>Reward</dt><dd>${reward}</dd></dl>`;
+  lvRoot.appendChild(d);
+});
+const a2 = document.createElement("a"); a2.href = "#levels-h"; a2.textContent = "All 15 journeys"; toc.appendChild(a2);
+const mk = document.getElementById("mk");
+mk.onclick = () => { const off = document.body.classList.toggle("markers-off"); mk.textContent = off ? "Show numbers" : "Hide numbers"; };
+})();
+</script>
+</body>
+</html>

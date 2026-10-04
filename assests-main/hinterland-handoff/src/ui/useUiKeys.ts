@@ -1,0 +1,49 @@
+// Esc (pause / back), H (hints), arrow keys through menus, and pause when the tab loses focus.
+import { useEffect } from "react";
+import { useStore } from "../state/store";
+import { live } from "../state/live";
+import { audio } from "../game/audio/audio";
+
+export function useUiKeys() {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const s = useStore.getState();
+      if (e.code === "Escape") {
+        e.preventDefault();
+        if (s.settingsOpen) s.closeSettings();
+        else if (s.sitting) useStore.setState({ sitting: false, waitRequested: false });
+        else if (s.atlasOpen) s.closeAtlas();
+        else if (s.phase === "play") s.pause();
+        else if (s.phase === "paused") s.resume();
+        return;
+      }
+      if (e.code === "KeyH" && s.phase === "play") {
+        // the Mule has a horn (goats move for it); the Rover's H keeps the hints toggle
+        if (s.vehicle === "mule") { if (!e.repeat) { audio.horn(); live.honk = live.clock; } }
+        else s.toggleHints();
+        return;
+      }
+      if (e.code === "F9" && import.meta.env.DEV) { e.preventDefault(); s.devSwapVehicle(); return; }
+      if ((e.code === "ArrowUp" || e.code === "ArrowDown") && s.phase !== "play") {
+        const panel = ["settings", "pause", "menu", "ending", "campfire", "exit"].map((id) => document.getElementById(id)).find((p) => p?.classList.contains("on"));
+        if (!panel) return;
+        const active = document.activeElement as HTMLInputElement | null;
+        if (active?.type === "range") return; // arrows adjust the slider
+        const list = [...panel.querySelectorAll<HTMLElement>(".nav button, .seg button, input, .back")].filter((b) => !b.hidden);
+        const i = list.indexOf(active as HTMLElement);
+        const next = list[(i + (e.code === "ArrowDown" ? 1 : -1) + list.length) % list.length];
+        if (next) { next.focus(); e.preventDefault(); }
+      }
+    };
+    const onBlur = () => useStore.getState().pause();
+    const onVis = () => { if (document.hidden) useStore.getState().pause(); };
+    addEventListener("keydown", onKey);
+    addEventListener("blur", onBlur);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      removeEventListener("keydown", onKey);
+      removeEventListener("blur", onBlur);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+}
