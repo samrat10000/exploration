@@ -1,42 +1,23 @@
-// Drifting sprite clouds. The first 8 sit low, tucked below the northern peaks.
+// Ambient clouds: cozy puff cumulus (CozyClouds.tsx) drifting slowly across the sky. The first 8 sit low,
+// tucked below the northern peaks; the rest float high, never on the flight line.
 import { useMemo } from "react";
-import { useFrame } from "@react-three/fiber";
-import { Color, Sprite, SpriteMaterial } from "three";
-import { live } from "../../state/live";
+import { useStore } from "../../state/store";
 import { hash } from "../../utils/noise";
-import { blobTexture } from "./textures";
+import { CloudSet, makeCloudSet } from "./CozyClouds";
 
-const tint = new Color();
+const WRAP = 1800;
 
 export function Clouds() {
-  const clouds = useMemo(() => {
-    const texes = [0, 1, 2].map((s) => blobTexture(256, 128, 14, s + 4));
-    return Array.from({ length: 34 }, (_, i) => {
-      const low = i < 8;
-      const s = new Sprite(new SpriteMaterial({ map: texes[i % 3], transparent: true, depthWrite: false, fog: false, opacity: low ? 0.55 : 0.8 }));
-      const ang = hash(i, 9) * Math.PI * 2, rad = low ? 160 + hash(i, 2) * 80 : 380 + hash(i, 3) * 500;
-      s.position.set(Math.cos(ang) * rad, low ? 44 + hash(i, 4) * 18 : 130 + hash(i, 5) * 180, low ? -150 - hash(i, 6) * 90 : Math.sin(ang) * rad - 150);
-      const sc = low ? 70 + hash(i, 7) * 50 : 180 + hash(i, 8) * 220;
-      s.scale.set(sc, sc * 0.45, 1);
-      s.userData.v = (low ? 1.2 : 2.5) + hash(i, 11) * 2;
-      return s;
-    });
-  }, []);
-
-  useFrame((_, dt) => {
-    tint.setRGB(1, 1, 1).lerp(live.env.sunC, 0.35);
-    for (const c of clouds) {
-      c.position.x += c.userData.v * dt;
-      if (c.position.x > 800) c.position.x = -800;
-      c.material.color.copy(tint);
+  const quality = useStore((s) => s.settings.quality);
+  const set = useMemo(() => {
+    const s = makeCloudSet(), n = quality === "low" ? 22 : 34;
+    for (let i = 0; i < n; i++) {
+      const low = i < 8, ang = hash(i, 9) * Math.PI * 2, rad = low ? 160 + hash(i, 2) * 80 : 380 + hash(i, 3) * 500;
+      // x is folded into one wrap period so the drifting field repeats without a seam
+      const x = ((Math.cos(ang) * rad + WRAP / 2) % WRAP + WRAP) % WRAP - WRAP / 2;
+      s.cumulus(x, low ? 44 + hash(i, 4) * 18 : 130 + hash(i, 5) * 180, low ? -150 - hash(i, 6) * 90 : Math.sin(ang) * rad - 150, low ? 28 + hash(i, 7) * 22 : 55 + hash(i, 8) * 70, i + 1);
     }
-  });
-
-  return (
-    <>
-      {clouds.map((c, i) => (
-        <primitive key={i} object={c} />
-      ))}
-    </>
-  );
+    return s;
+  }, [quality]);
+  return <CloudSet set={set} drift={2.2} wrap={WRAP} />;
 }

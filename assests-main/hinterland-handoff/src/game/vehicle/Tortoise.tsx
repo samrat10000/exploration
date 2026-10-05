@@ -1,6 +1,7 @@
 // The Tortoise + make camp (JOURNEYS §1.12): stopped on flat ground, hold E and the tent pops up, the
 // awning rolls out, chairs appear (2.5 s). It counts as a campfire: it saves, the camera orbits, and
 // the camp menu (ui/CampMenu.tsx) offers the lantern, cooking and sleeping until morning. Esc packs up.
+import { dirtify } from "./dirt";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial, PointLight, Points, PointsMaterial, SphereGeometry } from "three";
@@ -39,6 +40,7 @@ function buildParts() {
     spin.add(wheel.clone());
     return { pivot, spin, lx, lz };
   });
+  dirtify(root, [u.paint]);
   const parts: VehicleParts = { root, body, wheels, paint: u.paint };
   return { parts, camp, tent, lamp, moths, steam };
 }

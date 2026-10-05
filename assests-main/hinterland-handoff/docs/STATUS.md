@@ -1,75 +1,50 @@
 # STATUS — Hinterland
-_Updated by Claude Code after every TASK. Keep under 80 lines. Screenshots: `docs/screens/` (numbered)._
+_The one handoff file. A fresh Claude Code on any machine: read CLAUDE.md §0–§1, this file, then docs/MAP.md for the task. Keep under 80 lines; overwrite stale info._
 
-## Phase
-2 ✅ (2.6 game feel carried over). 3 → 3.0 ✅ 3.1 ✅ 3.2 ✅. User moved Phase 5 first: 5.1 ✅ 5.2 ✅ 5.3 ✅ 5.4 ✅ 5.5 ✅ 5.6 ✅ 5.7 ◐ (winch built, haul not tuned). 5.8 ✅ 5.1b ✅ 5.9 ✅. 3.3 ✅. Next: 3.4 lighting + post, then 3.3+. Queue: docs/TASKS.md.
+## Start here on a new machine
+1. `git clone` the repo, `cd assests-main/hinterland-handoff`, `npm install`, `npm run dev` (port 5179). `npm run build` must pass (zero TS errors).
+2. Headless playtest: `cd tools && npm install` once (needs Chrome at the path in tools/play.mjs), then from the project root
+   `node tools/play.mjs docs/screens/NN "wait:15000" "eval:JS" "shot:name" "hold:KeyW:3000" "state"`. `window.__hl` = {live, store}. Boot takes ~10–15 s.
+   Recipes: `eval:__hl.store.setState({done:['overlook',…]})` then `eval:__hl.store.getState().startJourney('<id>','journey')`, wait 14 s,
+   `eval:__hl.live.teleport(x,z,yaw)`, `eval:__hl.live.dev.tod=5` (time), `dev.weather='rain'`, `dev.freeCam=true` + `dev.look={from:[..],to:[..]}`.
+3. Phone test: `TOUCH=1 node tools/play.mjs …` (landscape, coarse pointer) or `TOUCH=portrait`. Brake + E buttons and the portrait "Turn your device sideways" card are verified; the floating stick and drag-to-look by finger are not.
+4. Windows shell: long Python/TS edits go in a scratch file (Write tool) and run with `python file.py` (heredocs break on quotes). Never touch git.
 
-## Done
-- **1.x** Port to Vite+React+TS+R3F+Rapier+zustand. Rover on Rapier raycast springs, all §4 feel targets. Hidden path → "The Tarn".
-- **2.1 Visual pass** (screens 01–03): camera-following grass (0.35–0.7 m, 4x dense ≤40 m, fade by 70 m, clumped, flower specks, base = exact ground colour, receives tree shadows). Ground = sage/olive/straw macro noise, dirt patches, worn route ruts, tree AO. Pines 0.6–1.8 + saplings, ragged clearings. Warmer sun, cool-blue shadow fill, deeper zenith, 60–200 m haze. HUD top scrim. Tinted rover glass with sky reflection.
-- **2.2 Journeys + Atlas** (04–08): journey registry (J1 playable, J2 playable-in-progress, J3–J8 locked). Progress along route drives time of day + fog. Atlas ported 1:1 (Map with done/next/locked, draw-on route, detail panel, Begin / Drive it again / Wander here; Garage with earned paints applied in-game; Journal = cards for places found). Title: Continue · Journeys · Settings · Exit. End screen ("Back to the Atlas" / "Stay a while"). Save v2 + v1 migration (verified).
-- **2.3 The Mule** (09–11): 3-wheel vehicle (teal cab, cream roof, slatted rack, headlight, bell, ropes). Shared controller with a VehicleSpec (Rover numbers unchanged). Lean + inside-wheel lift >5.5 m/s², roll >7.5 (loaded 4.4/6.2). 6 crates on soft straps (strain → break), real Rapier bodies when loose, hold E to reload (0.8 s arc). No-fail recovery (fade 40%, back to last safe point). Two-stroke putt, rack creak/rattle, crate glyph HUD. Dev: F9 swaps Rover/Mule.
-  - Verified: 3–4 m/s full lock keeps all 6; 8 m/s half lock spills 1; 6 m/s full lock rolls → all spill → recovers.
-- **2.4/2.5 Kettle Peak** (12–14): region system (ground/physics/grass/colour per region, black-cut swap). 240 m cone, trail spiral 3.1 turns, 2.18 km, 8.5% grade + two 12% ramps, 3° inward bank, ruts, grass middle strip, 2 hairpin switchbacks on 3.6 m ledges, final 12% ramp to hut. Orchard + terraces + farmhouse + waving traveller ("Mind the corners with a full rack."), goats (stop or honk H → amble off), mud (grip −40%), log (nudge → rolls off edge), rockslide (wheels ride over rocks), plank bridge over gap (sways, creaks, >5 m/s bounces cargo), pines + needles, eagle camera moment, cloud band (fog, muffled sound, bell poles with positional HRTF bells), stone shelter + 2 campfires (arrive = save; hold E sit → orbit cam, "Wait until golden hour"), cloud-sea break camera moment + first music cue, snow (grip −25%) + crosswind gusts, sunset palette added, hut + keeper + 6 lanterns, prayer flags, cairns. Ending code: keeper unloads (crates glide to stack), lantern per crate, 3 ending lines, J3 revealed; lost crates saved for Wander, delivering later adds a lantern + keeper line.
-  - Verified (autopilot, High, 181 fps): full climb start → hut with 6/6. Endings: 6/6, 3/6 ("Three of six made it…"), 0/6 ("The keeper laughs…"). Atlas then shows J2 done, J3 revealed. Wander: a left crate persists, E lifts it, delivering lights lantern 4 + keeper line. Screens 16–18.
-- **3.0 Dev panel** (dev builds only, lazy-loaded; prod keeps only the `live.dev` flags object). F3 panel: fps / frame ms / draws / tris; journey + progress + spiral turn, clickable scrub bar, beat chips (J2: orchard, log, bridge, bell poles, hairpin, clouds, hut 0.96 = just short of the ending; J1: start, highfall, tarn, overlook = finishes J1); time slider + auto, weather chips clear / fog band (×16, muffles sound) / snow; vehicle swap + speed + lateral accel; cargo n/6, drop all, reload all, reset (uprights in place); toggles colliders (own wireframes ≤70 m, heightfield skipped), route spline, trigger rings, free cam, hide UI, slow-mo 0.25× (scales every frame dt incl. physics). Keys: F3, F4 free cam (WASD, Q/E, Shift, drag; vehicle input off), F6 hide UI, and while the panel is open: [ ] scrub ±0.02, T time +0.5, 1–7 teleport.
-  - Verified headless: all 7 J2 beats + 4 J1 beats land (progress matches, highfall/overlook trigger), slow-mo clock = 0.25 s/s, drop/reload 6/6, free cam leaves vehicle at 0 m/s, hide UI hides panel + HUD, no console errors. 180 fps.
+## How to work (cheap and good)
+- Loop: run `/loop` (no args). Each tick = ONE task from "Left to do", top first: read only the files it names, build, run it in the headless browser, look at 1–2 screenshots, update this file + TASKS.md, then `ScheduleWakeup` ~60 s with `<<autonomous-loop-dynamic>>`. Stop the loop when the list is empty.
+- Save tokens: MAP.md first; no reading reference/demos/; read each file once, patch many things in one script with `assert`ed replacements; one screenshot per feature; don't re-read after edits; keep replies terse.
+- Report in the CLAUDE.md DONE shape. Record anything fake/thin under "Not real yet". Journey ids: overlook, longway, boulder, lantern, hutrounds, islands, snow, firefly, skyroad, market, salt, coast, light, above, flowers.
 
-- **3.1 Models** (Asset Lab ported to src/game/art/kit.ts + per-asset files at their "Port to" paths): Mule, Rover, wheel, crate, pine (3 variants), apple tree (3), rocks (12 shapes), dry-stone wall (edge + terraces), posts + rope, farmhouse, stone hut (keeper, flags, door lanterns), campfire, bell pole (new: they were sound only), goat, traveler (waves), keeper. kit: mergeByMaterial (plain colours baked to vertex colour), instanced() in 96 m cells (culling incl. shadow pass), mergedAt() for rocks, bakeStatic() keeps animated parts live. three r169 colour: lin() no longer double-converts. Lamps/windows glow by time of day (updateGlow).
-  - Measured (High, 1280×720): valley menu 272 draws / 1.1M tris; Kettle worst views 350 draws / 2.6M tris (incl. shadow pass); 177–181 fps. Colliders unchanged except hut box = its plinth.
-  - Dev: live.dev.look = {from, to} aims the free cam (screenshots).
+## Done (all ✅ in docs/TASKS.md)
+Finale unlock: after J14 the Atlas offers any ground vehicle for "Wander here" (extra.allOpen → store.wanderVehicle; boat/flight vehicles still start from their slipways/ridges). Phases 1–2 (stack, Rapier vehicles, Journeys + Atlas, Mule, Kettle Peak) · 3.0 dev panel F3 · 3.1–3.4 models, placement, grass, lighting/post · 3.6 photo mode · 3.9–3.15 weather, dirt, seeds, horn, clouds/sky, fireworks, music · 4.1 travelers, 4.3 settings · 5.1–5.9 flight, glider, bus, boat, Tortoise, Snowcat, winch, birds/storms, Hut Rounds · 6.3–6.15 journeys 3–15 (each region in src/game/world/<name>/), all playable start → ending.
 
-- **3.2 Placement:** height.ts flattenPad/slopeUnder; farm moved to the flattest site near turn 1 (2.2° slope), shelter dug into the bank on its own pad (corners measured 0.00 m off the ground). Trail edge every 2 m by worst drop within 6 m: walls (drop > 4 m, gaps), posts every ~2 m + rope (1.5–4 m), half-buried stone groups (flat); colliders match visuals. Orchard in rows between the terraces (6.5 m), pine groves (sunflower spacing) with sapling rims and blossom trees at meadow edges; valley woods edge in saplings + 30 blossoms. Rock groups everywhere (boulder + 2 medium + pebbles + tufts, kept off roads and out of water); 71 on Kettle's rocky slopes. Flower drifts (one species, 5–15 each; 121 valley, ~250 Kettle) along trails, river banks, tarn. Shelter = dry-stone walls + slab roof; hut lanterns on posts; cairns from lab rocks; log, rockslide, bridge rebuilt.
-  - Perf: distance culling (flowers 80 m, edge 170 m), apple/blossom LOD at 110 m, baked looks flat-shaded. Worst views 330 draws / 2.42M tris, 180 fps.
-  - Verified: autopilot J2 from past the goats at ≤5 m/s → hut with 6/6, 0 recoveries. At 7 m/s it tips at the two hairpins (Mule design, unchanged).
+## Left to do — cheapest first
+Small (≈ one tick each)
+1. Sunset "wait" option at camp (J12) and a forced scripted J5 order (conflicts with the honey gift chain: decide first).
+2. Remaining reward items: mail-bag rack, kite, wipers, fog lamps (no Garage item yet). Done: rack lights (Hut Rounds), prayer flags (Valley of Flowers), star charm (Firefly Road), scarf (First Snow): vehicle/decor.ts, shown from extra.mods.
+Medium (a few ticks)
+3. Ground feel leftovers: potholes + puddles on paths, snow-rut heightmap (the camera bump is covered by the existing landing/jolt shake). Surface sounds (splash, mud squelch, snow crunch, stone rumble) are in by code, never heard.
+4. Weather leftovers: Kettle's own progress-driven snow merged with the weather system. Done: rain ripples on ground/water, wet + snow on grass tips, rocks and all baked props (houses, walls) via patchGround.
+5. World kit leftovers: sky lanterns rising at night, a shared particle pool; Sky Road parcels + valley village with fireworks. Done: balloons (3 valley, 7 Sky Road) and dragons (jade circles the cloud sea, ember by the hut: props/dragon.ts + world/Dragons.tsx; no discovery card or fly-alongside yet).
+6. Flight polish: ¾ front unfold camera, touch flight controls, bus door folding + rider animation. [5.x]
+7. Lighting: god rays at golden hour, MSAA on real GPUs, review golden-hour Kettle / hut-at-dusk views against ART §1; pine LOD. [3.4]
+8. Garage roster as 3D turntables with dolly; explicit music cue moments (4.4) if "silence by default" is wanted (see note below).
+Large (many ticks)
+9. Own regions for J5 Hut Rounds (high meadow ridge) and J10 Market Day (7 distinct villages, stone bridges, level-crossing train, fair scene).
+10. J14 finale over the whole world (all regions) + credits with people/music.
+11. Art pass on thin journeys (gorge walls, salt, coast surf, Firefly observatory, lake islands) to the ART §1 "wallpaper" bar.
+12. Phase 7: 7.0 small-touches backlog (WEATHER.md §5), 7.1 journeys 16–19 + Dragon Festival (design desk sends docs), 7.2 build-your-own-vehicle Garage.
+Open decision: music is ON by default (task 3.15) but CLAUDE.md 4.4 says silence by default. M toggles; ask the user before changing.
 
-- **5.1 Flight** (vehicle/flight.ts, SkyMule.tsx, mule/SkyKit.ts, world/SkyPlaces.tsx, ui/FlightHud.tsx): glide model (lift ∝ v², gentle sink, nose drops when slow, no stall), bank-to-turn, thermals (+3–4.5 m/s, shimmer column + rising seeds), puff (3 × 4 s climb, refill 26 s / 5 s in thermals), soft ground bounce, hard hit → no-fail recovery to last thermal. Launch ridge (windsock + stone ramp): stop in the Mule, hold T 1.2 s → 3 s unfold (letterbox, wings → struts → tail → prop) → off the edge at 16 m/s. Landed: hold T → fold back to the Mule. Landing ring of light + 7 glide-path lights (6°, fade as passed, within 300 m); inside the ring = auto-flare. HUD: altitude ribbon, puff dots, hold-T ring, "rising air" (first 2), slow hint (once), landing hint (first 2 landings). Valley sandbox: launch at the Overlook, 3 thermals, ring on the start meadow; dev panel "sky mule (fly)" spawns airborne.
-  - Verified headless: launch → unfold → glide (~1.5 m/s sink at 17 m/s), thermal climb, bank turn, puff climb, hill landing → fold → Mule drives. Flare unit test: 12.6 m/s dive into the ring lands, outside = recovery.
+## Not real yet (honest list)
+- Ambience added by code only, never heard (headless): night crickets, surf (coast / lake / lighthouse), wind rising with flight speed. Tune by ear.
+- Hut Rounds: crates on the rack aren't tied to the carried items; meteor nights unlocked but not built; thermos does nothing. Forecast Rain/Snow work via Weather.
+- Journeys 5, 10, 14 reuse the valley; J9 has no parcels/dragons/balloons; J13 generator = one ordinary crate; J11 mirror is the water shader (no true reflection).
+- Photo mode: no DOF / vehicle hide / spot banner. Flight: chase cam on unfold. Bus doors don't visibly fold.
+- Valley sandbox keeps thermals (cloud-capped) + a storm cell (tower and rain only while flying) + 2 slipways for testing flight/boat.
+- Tuning vs CLAUDE.md: J2 trail 2.18 km (spec 2.8); cloud band fog ×16; Mule gripSpeed 4, strap hold 6.0, tip needs 0.6 s; suspension numbers stay on CLAUDE.md §4 (not FEEL.md's 28/1.9, gravity 24).
+- AO intensity 0.8 / radius 1.2 (spec 1.4/1.6, spikes grass); MSAA off (black in headless GPU); SMAA only.
 
-- **5.2 Rover glider** (rover/GliderKit.ts): same flier component (SkyMule.tsx, kind "glider"); side panels swing out into 8.8 m wings + struts + tail; no prop (no puffs, thermals only). Rover on a launch ramp + hold T → glider; landed + hold T → Rover. Dev: "glider (fly)". Verified: launch, unfold, glide, land, fold prompt.
-
-- **5.3 The Loaf** (vehicle/bus/BusModel.ts, Bus.tsx, BUS spec: 4.6 m wheelbase, max 12 m/s, steer 1.0, 3600 kg; world/BusRoute.tsx, props/busStop.ts, ui/BusHud.tsx): stop at a stop + hold E → riders for it get off, waiting ones board (12 seats, random destinations); bell rings within 90 m of a wanted stop; drive past → they get off at the next door and "walk back"; comfort lines only ("Steady!", a chicken, humming after 40 s calm). HUD: paper ticket (next stop + the next two), seat dots, one passenger line. Valley sandbox: 3 stops; dev chip "bus". kit: halo() sprites now survive bakeStatic.
-
-- **5.4 Boat mode** (vehicle/Boat.tsx, rover/BoatKit.ts, world/Slipways.tsx): slipway (plank ramp + mooring post); Rover stopped on it + hold T → 3 s (wheels fold, floats swing out, prop drops) → splash. Arcade boat: max 9 m/s / reverse 3, rudder needs way on, keeps to water deeper than 0.75 m (bumps off the bank), bob + pitch + lean, soft foam wake. Beside a slipway + hold T → back ashore as the Rover. Valley: 2 slipways on the river. Verified: float, sail, turn, bank bump, ashore.
-
-- **5.5 Tortoise + make camp** (vehicle/tortoise/TortoiseModel.ts, Tortoise.tsx, TORTOISE spec: max 10 m/s, 1300 kg; ui/CampMenu.tsx): stopped on flat ground (≤ ~14°) + hold E → tent pops up, awning/rug/lights/chairs/table unfold (2.5 s), saves, camera orbits. Radial menu (plain text, arrows + Enter): Light the lantern (point light + moths), Cook something (8 s steam), Sleep until morning (fade → tod 1), Pack up (also Esc). Dev chip "tortoise". Verified the whole loop headless.
-
-- **5.6 Snowcat** (vehicle/snowcat/SnowcatModel.ts, Snowcat.tsx, SNOWCAT spec: tracked = full grip on snow/mud, ignores crosswind; max 9 m/s, steer 0.9, 4200 kg): sled towed on a hitch (trailer kinematics, swings wide), deep track marks laid in snow (700-mark ring), Kettle's upper trail gets 16 drifts that squash flat (and stay flat) when driven through. Dev chip "snowcat". Verified: autopilot up Kettle's snow section, marks + sled + drifts.
-
-- **5.7 Grapple winch** (vehicle/winch/{WinchModel.ts,useWinch.ts,WinchHud.tsx}, world/Anchors.tsx; Rover only): drum on the bumper, hook + catenary cable (slack sags, taut is straight), iron-ring anchor boulders with a glint; hold RMB aims (snaps to the nearest ring ≤ 18 m, ahead, on screen; dashed rings on other anchors, solid sun ring + distance on the lock, dotted throw arc), release throws (0.55 s arc), W reels in / S lets out / Q lets go; rope is a damped spring that slips at max load (never snaps), auto-releases on top. Valley sandbox: 2 anchors near the start.
-  - NOT working yet: hauling the Rover up and over the sandbox boulder. The pull lifts it (it goes airborne) but the vehicle doesn't land on the crown. Needs tuning against J3's real boulder garden (6.3). Cable, aim, throw, latch, tension are verified.
-
-- **5.8 Birds + storms** (world/SkyHazards.tsx; FlightHud + ui.css): instanced murmuration flocks (flap, circle, ~150 m visible); hit = scatter + shake 0.25 + white edge vignette 0.4 s, never a fail. Storm cell = dark cloud sprites + 1400 rain points, ribbon band, screen rain + darker grade inside, turbulence jolt every 2–5 s, lightning 0.12 s flash + point light, thunder 1–3 s later, "Weather coming in" 5 s on approach. Verified headless (screens 58-a/b/hit): storm 0.69 inside, warn shows, hit 0.94, no errors. Valley flocks moved to y 58/66 so the sandbox glide meets them.
-  - Not real: feathers, beacon through rain, wipers/light-return fade, hit-by-bird crate shift (J9 will add).
-
-- **5.1b Flight reconciled with skyroad.js:** flight.ts now uses the prototype's model (pitch k 2.2 to −0.42/+0.32, bank 0.62 k 2.6, yaw 0.8·bank·speed-scale, vy = v·sin·0.75 − 0.9 − bank²·2.2 + lift, thermal lift 8, puff +3.2 / +3.5, refill 10 s / 2.5 s, speed 7–42, nose drops under 12). Camera 12.5 back / 4.1 up. Birds: radius 3, hit = speed ×0.85, cooldown 1.4 s, shake 0.5. Storm turbulence = continuous heave. Kept: launch ridge, landing ring + auto-flare, recovery, fold. Verified headless: glide, bank, no errors.
-  - Not real: camera height does not follow pitch yet; crates falling on a hard-bank bird hit (J9).
-
-- **5.9 Hut Rounds** (rounds/rounds.ts, world/HutRounds.tsx, world/props/huts.ts, ui/RoundsHud.tsx, ui/Forecast.tsx; Journal "Stamps"): valley sandbox, Mule only. Depot pad + 5 huts (tea, weather, bakery, beekeeper, star-watcher) on scanned open meadow east of the start (trees cleared around them). Stop on the pad + hold E 2 s loads what undelivered huts still need (rack cap 6); stop at a hut + hold E hands over the order: keeper line, Given → Received, stamp for the season, gifts become cargo (tea → star-watcher, honey → bakery; bakery also orders honey, a small chain deviation). Slips top-left (hide when fast, Tab shows, struck through then slide away). All 5 done = new day: orders return, season advances (stamps overlap per season). Weather station unlocks the Forecast: sleeping at camp then offers Clear / Mist / Rain / First snow.
-  - Verified headless (screens 59–61): full round depot→tea→weather→depot→bees→bakery→stars, 5 stamps, round regenerated, unlock flags set, forecast picks and saves.
-  - Not real: rack crates are not tied to the inventory (HUD text only); Rain and First snow forecasts are saved but have no weather yet (Clear/Mist change fog); meteor nights unlocked but not built; thermos has no effect (night drives, J6); first-visit camera moment is a look-toward, not an orbit; carried items/delivered set are session-only (stamps + day persist).
-
-- **3.3 Grass shader** (world/Grass.tsx): blade now 6 tapered segments (curved by the wind bend), 2% wild oats (1.5× tall, thin stem, ochre seed head), 4% clover (low wide leaves, darker), plants part around the vehicle (2.8 m). Kept: clumps, root = terrain colour, 3% flowers, gusts, density rings (dense ≤40 m, none past 70 m). Verified: 181 fps High, screens 62; oats/clover seen only at small size (not close-up reviewed).
-
-## Not real yet
-- Flight: unfold camera is the chase cam (spec: ¾ front swing); W/S pitch only (no touch flight controls yet); wind audio does not yet rise with airspeed.
-- Bus: doors don't visibly fold yet (boarding is timed, riders not animated); bus stops sit on raw ground (J10 region will pad them); no night lights (halo only).
-- Camp: "Take a photo" waits for photo mode (3.6); sleep sets morning only in wander (a journey's light follows its route).
-- Snow: "Thin ice" (frosty edges + cracks over 6 m/s) waits for a frozen lake (J8 region); drifts are visual (no resistance).
-- No pine LOD/impostors yet (in budget without). Valley Overlook lantern pole is still a plain cylinder (3.4 lighting pass).
-- Dev weather chips have no rain (storms exist only as the flight cell). Vehicle chips: rover/mule only until 5.x vehicles exist.
-- Gusts and bell audio verified only by code path, not by ear (headless). Eagle moment not screenshot-reviewed.
-- Kettle physics grid 512 (1.25 m) + 0.7 m flat road margin: needed on 3.6 m ledges.
-- Postcards = discovered places (no photo mode yet). No night palette (campfire offers golden hour only).
-- Valley tarn screenshot (15) predates the visual pass.
-
-## Tuning changes vs CLAUDE.md
-- Squat direction physical (nose up on accel). overspeedDrag 1.2, pushGrip 0.3 (both Rover).
-- Grass counts per preset 26k/60k/110k/170k; terrain seg 220/300/400/480.
-- J2 trail 2.18 km (spec ~2.8) to keep 7–9% grade with ~3.5 turns. Cloud band fog ×16 (spec ×6) to reach ~25 m visibility.
-- Mule: gripSpeed 4, strap hold 6.0 m/s², tip needs 0.6 s sustained.
-
-## Next
-Package "hinterland-updated-6" is integrated (CLAUDE.md, docs/*, reference/src + ui + demos). **Start every task at docs/MAP.md** (it lists the only files to read). Model sources are now reference/src/kit/*.js; never open reference/demos/.
-User order: Phase 5 first. → 5.1b reconcile flight with skyroad.js → 5.9 Hut Rounds → then Phase 3.3–3.15, Phase 4, Phase 6.
-→ Carried over: 2.6 Game feel (3.8 supersedes it).
+## Layout cheatsheet
+src/game/{world/<region>/, vehicle/, environment/, audio/, life/, rounds/, journeys/journeys.ts (registry)} · src/state/{store.ts, live.ts (shared mutable state), save.ts} · src/ui/ (HUDs, Atlas, Settings) · docs/screens/ (numbered screenshots).
+Adding a region: RegionId in journeys.ts + height.ts + live.ts, per-region maps (flight.ts SKY, BusRoute STOPS, Anchors, Slipways), store.ts setGround/safePoint, World.tsx switch, registry entry.

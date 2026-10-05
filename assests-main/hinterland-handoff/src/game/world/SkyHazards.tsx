@@ -3,13 +3,13 @@
 // lightning + late thunder). Writes live.flight.storm / bump / hit / flash / warn for the flier and HUD.
 import { useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { BufferGeometry, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, MeshBasicMaterial, Object3D, PointLight, Points, PointsMaterial, Sprite, SpriteMaterial } from "three";
+import { BufferGeometry, DoubleSide, Float32BufferAttribute, Group, InstancedMesh, MeshBasicMaterial, Object3D, PointLight, Points, PointsMaterial } from "three";
 import { audio } from "../audio/audio";
 import { live } from "../../state/live";
 import { useStore } from "../../state/store";
 import { clamp, hash } from "../../utils/noise";
 import { addShake } from "../camera/CameraRig";
-import { blobTexture } from "../environment/textures";
+import { CloudSet, makeCloudSet } from "../environment/CozyClouds";
 import { SKY, type Flock, type Storm } from "../vehicle/flight";
 import { height } from "./height";
 
@@ -29,14 +29,7 @@ function flockModel(f: Flock, seed: number) {
 }
 
 function stormModel(s: Storm) {
-  const g = new Group(), tex = blobTexture(256, 128, 14, 5);
-  for (let i = 0; i < 16; i++) {
-    const a = hash(i, 11) * 6.28, r = Math.sqrt(hash(i, 12)) * s.r * 0.8, tier = hash(i, 13);
-    const sp = new Sprite(new SpriteMaterial({ map: tex, color: tier > 0.5 ? 0x4a5160 : 0x5f6674, transparent: true, opacity: 0.9, depthWrite: false }));
-    sp.position.set(s.x + Math.cos(a) * r, s.y1 - 12 - tier * (s.y1 - s.y0 - 12), s.z + Math.sin(a) * r);
-    sp.scale.set(s.r * 1.3, s.r * 0.75, 1);
-    g.add(sp);
-  }
+  const g = new Group();
   const N = 1400, p = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) { const a = hash(i, 21) * 6.28, r = Math.sqrt(hash(i, 22)) * s.r; p[i * 3] = s.x + Math.cos(a) * r; p[i * 3 + 1] = hash(i, 23); p[i * 3 + 2] = s.z + Math.sin(a) * r; }
   const rg = new BufferGeometry(); rg.setAttribute("position", new Float32BufferAttribute(p, 3));
@@ -52,6 +45,18 @@ export function SkyHazards() {
   const map = SKY[region];
   const flocks = useMemo(() => map.flocks.map((f, i) => flockModel(f, 40 + i * 7)), [map]);
   const storms = useMemo(() => map.storms.map(stormModel), [map]);
+  // storm towers, and a cumulus capping every thermal (pilots read it: the cloud marks the lift)
+  const clouds = useMemo(() => {
+    const c = makeCloudSet();
+    map.thermals.forEach((t, i) => c.cumulus(t.x, t.top + 4, t.z, 24, 70 + i));
+    return c;
+  }, [map]);
+  // the storm tower only stands while you fly (it loomed over the start meadow and the title screen)
+  const towers = useMemo(() => {
+    const c = makeCloudSet();
+    map.storms.forEach((st, i) => c.cumulonimbus(st.x, st.y0, st.z, st.r * 0.7, 90 + i));
+    return c;
+  }, [map]);
   const d = useMemo(() => new Object3D(), []), wd = useMemo(() => new Object3D(), []);
   useMemo(() => { d.add(wd); }, [d, wd]);
   const st = useMemo(() => ({ hitT: 0, warned: false, thunderAt: [] as number[] }), []);
@@ -88,6 +93,9 @@ export function SkyHazards() {
       const { s, rain, bolt, p } = m;
       const dist = Math.hypot(car.x - s.x, car.z - s.z), inY = clamp((car.y - (s.y0 - 25)) / 25, 0, 1) * clamp((s.y1 + 10 - car.y) / 25, 0, 1);
       if (flying) { storm = Math.max(storm, clamp((s.r - dist) / (s.r * 0.25), 0, 1) * inY); near = Math.min(near, dist - s.r); }
+      // the cell's rain only falls while you are flying (it was square specks drifting over the title screen and the first level)
+      rain.visible = flying;
+      if (!flying) continue;
       const a = rain.geometry.attributes.position, top = s.y0 + 20;
       for (let i = 0; i < p.length / 3; i++) {
         const gy = height(p[i * 3], p[i * 3 + 2]);
@@ -118,6 +126,8 @@ export function SkyHazards() {
     <>
       {flocks.map((k, i) => <group key={`f${i}`}><primitive object={k.L} /><primitive object={k.R} /></group>)}
       {storms.map((m, i) => <primitive key={`s${i}`} object={m.g} />)}
+      <CloudSet set={clouds} />
+      {towers.count() > 0 && <CloudSet set={towers} flash={() => live.flight.flash} show={() => live.flight.on} />}
     </>
   );
 }

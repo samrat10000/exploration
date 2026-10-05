@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { PerspectiveCamera, Vector3 } from "three";
+import { LENSES } from "../photo";
 import { live } from "../../state/live";
 import { useStore } from "../../state/store";
 import { angleLerp, clamp, damp, easeInOutCubic } from "../../utils/noise";
@@ -89,7 +90,7 @@ export function CameraRig() {
     };
     const move = (e: PointerEvent) => {
       if (!look.drag || e.pointerId !== look.id) return;
-      look.orbit -= (e.clientX - look.lx) * 0.006;
+      look.orbit -= (e.clientX - look.lx) * 0.006 * (useStore.getState().settings.camSens / 100);
       look.lx = e.clientX;
       look.idle = 0;
     };
@@ -112,7 +113,15 @@ export function CameraRig() {
     if (phase === "play" || phase === "paused" || phase === "ending") {
       if (!look.drag) { look.idle += dt; if (look.idle > 1.6) look.orbit *= Math.exp(-1.6 * dt); }
       if (Math.abs(car.speed) > 0.5 || car.air) camYaw.current = angleLerp(camYaw.current, car.yaw, damp(live.cam.yawK, dt));
-      if (live.sit) {
+      if (s.photo) {
+        // photo mode: free orbit + dolly around the vehicle, never under the ground
+        const o = live.photo;
+        camPos.set(car.x + Math.sin(o.yaw) * Math.cos(o.pitch) * o.dist, car.y + 1.2 + Math.sin(o.pitch) * o.dist, car.z + Math.cos(o.yaw) * Math.cos(o.pitch) * o.dist);
+        camPos.y = Math.max(camPos.y, height(camPos.x, camPos.z) + 0.8);
+        camLook.set(car.x, car.y + 1.2, car.z);
+        smPos.lerp(camPos, damp(10, dt));
+        smLook.lerp(camLook, damp(12, dt));
+      } else if (live.sit) {
         // sitting at a fire: a slow orbit, the fire in the middle of the frame
         const a = live.clock * 0.07, sit = live.sit;
         camPos.set(sit.x + Math.cos(a) * 7.5, 0, sit.z + Math.sin(a) * 7.5);
@@ -162,7 +171,7 @@ export function CameraRig() {
     camera.lookAt(smLook);
     placeLabel(camera as PerspectiveCamera);
     const cam = camera as PerspectiveCamera;
-    const targetFov = phase === "play" && !calm ? 55 + Math.min(1, Math.abs(car.speed) / 21) * 7 : 55;
+    const targetFov = s.photo ? LENSES[live.photo.lens][1] : phase === "play" && !calm ? 55 + Math.min(1, Math.abs(car.speed) / 21) * 7 : 55;
     if (Math.abs(cam.fov - targetFov) > 0.01) {
       cam.fov += (targetFov - cam.fov) * damp(3, dt);
       cam.updateProjectionMatrix();

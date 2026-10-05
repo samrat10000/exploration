@@ -5,6 +5,7 @@ import {
   AdditiveBlending, BoxGeometry, CanvasTexture, Sprite, SpriteMaterial, BufferAttribute, BufferGeometry, Color, CylinderGeometry, CurvePath, Group, LatheGeometry, Material, Matrix4, Mesh,
   InstancedMesh, MeshStandardMaterial, Object3D, QuadraticBezierCurve3, TubeGeometry, Vector2, Vector3, type Curve, type MeshStandardMaterialParameters,
 } from "three";
+import { patchGround } from "../shaders";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 export type V3 = [number, number, number] | null | undefined;
@@ -132,7 +133,11 @@ export function mergeByMaterial(root: Object3D, bake = false) {
       const metal = sm.metalness >= 0.3;
       // one look per side + metal class, flat-shaded (the low-poly look): a prop becomes 2–3 draws
       key = ['bake', sm.side, metal].join('|');
-      if (!bakedMats.has(key)) bakedMats.set(key, new MeshStandardMaterial({ vertexColors: true, roughness: metal ? 0.35 : 0.9, metalness: metal ? 0.6 : 0, flatShading: true, side: sm.side }));
+      if (!bakedMats.has(key)) {
+        bakedMats.set(key, new MeshStandardMaterial({ vertexColors: true, roughness: metal ? 0.35 : 0.9, metalness: metal ? 0.6 : 0, flatShading: true, side: sm.side }));
+        // baked props (rocks, houses, walls) get wet and wear snow like the ground does
+        const bm = bakedMats.get(key)!; bm.onBeforeCompile = patchGround; bm.customProgramCacheKey = () => 'baked-weather';
+      }
       mat = bakedMats.get(key)!;
     }
     key += m.castShadow ? 'c' : '';

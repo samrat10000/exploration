@@ -1,10 +1,11 @@
 // Fully synthesized soundscape (no files): wind that strengthens with altitude, birdsong,
 // water by proximity, and an engine that strains uphill and falls silent when you stop.
+import { makeSound, type Mood, type Sound } from "./sound";
 import { live } from "../../state/live";
 import { clamp, smooth } from "../../utils/noise";
-import { POOL, riverX } from "../world/height";
+import { POOL, riverX, waterLevel } from "../world/height";
 
-interface Volumes { master: number; amb: number; eng: number }
+interface Volumes { master: number; amb: number; eng: number; music: number }
 
 interface Graph {
   ctx: AudioContext;
@@ -15,9 +16,12 @@ interface Graph {
   putt: OscillatorNode; puttMod: OscillatorNode; puttG: GainNode; burstG: GainNode;
   creak: OscillatorNode; creakG: GainNode; rattleG: GainNode;
   // places: fog muffles nature; a fire crackles; music is rare
+  cricketG: GainNode; surfG: GainNode; surfF: BiquadFilterNode;
   ambLP: BiquadFilterNode; fireG: GainNode; music: GainNode; noiseBuf: AudioBuffer;
   nextCreak: number;
   nextBird: number;
+  echo?: { d: DelayNode; out: GainNode };
+  snd: Sound;
 }
 
 let g: Graph | null = null;
@@ -95,11 +99,22 @@ export const audio = {
     fhp.type = "bandpass"; fhp.frequency.value = 2600; fhp.Q.value = 0.7; fireG.gain.value = 0;
     noise().connect(fhp); fhp.connect(fireG); fireG.connect(amb);
 
-    g = { ctx, master, amb, eng, windG, windF, waterG, o1, o2, lp, eg, putt, puttMod, puttG, burstG, creak, creakG, rattleG, ambLP, fireG, music, noiseBuf: buf, nextCreak: 0, nextBird: ctx.currentTime + 2 };
+    const snd = makeSound(ctx, master, buf);
+    // night crickets: a high band of noise chopped by a fast LFO; surf: low noise swelling slowly (a 9 s wave)
+    const crF = ctx.createBiquadFilter(), cricketG = ctx.createGain(), crLfo = ctx.createOscillator(), crDepth = ctx.createGain();
+    crF.type = "bandpass"; crF.frequency.value = 4300; crF.Q.value = 9; cricketG.gain.value = 0;
+    crLfo.frequency.value = 23; crDepth.gain.value = 0.5; crLfo.start();
+    const crAm = ctx.createGain(); crAm.gain.value = 0.5; crLfo.connect(crDepth); crDepth.connect(crAm.gain); noise().connect(crF); crF.connect(crAm); crAm.connect(cricketG); cricketG.connect(amb);
+    const surfF = ctx.createBiquadFilter(), surfG = ctx.createGain(), swell = ctx.createOscillator(), swellD = ctx.createGain();
+    surfF.type = "lowpass"; surfF.frequency.value = 700; surfG.gain.value = 0;
+    const surfAm = ctx.createGain(); surfAm.gain.value = 0.65; swell.frequency.value = 0.11; swellD.gain.value = 0.35; swell.connect(swellD); swellD.connect(surfAm.gain); swell.start();
+    noise().connect(surfF); surfF.connect(surfAm); surfAm.connect(surfG); surfG.connect(amb);
+    g = { cricketG, surfG, surfF, snd, ctx, master, amb, eng, windG, windF, waterG, o1, o2, lp, eg, putt, puttMod, puttG, burstG, creak, creakG, rattleG, ambLP, fireG, music, noiseBuf: buf, nextCreak: 0, nextBird: ctx.currentTime + 2 };
     audio.applyVolumes(v);
     master.gain.cancelScheduledValues(ctx.currentTime);
     master.gain.setValueAtTime(0, ctx.currentTime);
     master.gain.setTargetAtTime(v.master / 100, ctx.currentTime, 1.5); // fade in gently
+    snd.start();
   },
 
   applyVolumes(v: Volumes) {
@@ -108,7 +123,15 @@ export const audio = {
     g.master.gain.setTargetAtTime(v.master / 100, t, 0.2);
     g.amb.gain.setTargetAtTime(v.amb / 100, t, 0.2);
     g.eng.gain.setTargetAtTime(v.eng / 100, t, 0.2);
+    g.snd.setLevel(v.music / 100);
   },
+  /** the generative soundtrack follows the world: time of day, rain, storms */
+  setMood(m: Mood) { g?.snd.setMood(m); },
+  /** M: music on / off (returns the new state) */
+  toggleMusic() { return g ? g.snd.toggleMusic() : false; },
+  musicOn() { return g ? g.snd.musicOn : true; },
+  duck(on: boolean) { g?.snd.setDuck(on); },
+  chime() { g?.snd.chime(); },
 
   /** the bridge creaks under load */
   creak(level: number) {
@@ -133,15 +156,101 @@ export const audio = {
     gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.5, t + 0.25); gain.gain.setTargetAtTime(0, t + 0.5, 1.1);
     src.connect(f); f.connect(gain); gain.connect(g.amb); src.stop(t + 5);
   },
-  horn() {
+  /** landing thud (FEEL §5): low-passed noise at 160 Hz, louder with the impact */
+  /** tyre sounds by surface (FEEL §2): splash in water (noise above 900 Hz), crunch in snow (2.2 kHz, 80 ms), squelch in mud, rumble on stones */
+  surface(kind: "water" | "snow" | "mud" | "path", speed: number) {
+    if (!g) return;
+    const c = g.ctx, t = c.currentTime, src = c.createBufferSource(), f = c.createBiquadFilter(), gain = c.createGain(), k = Math.min(1, speed / 14);
+    src.buffer = g.noiseBuf; src.start(0, Math.random() * 2);
+    const P = { water: ["highpass", 900, 0.7, 0.2, 0.07], snow: ["bandpass", 2200, 1.2, 0.08, 0.06], mud: ["lowpass", 320, 1.5, 0.16, 0.12], path: ["bandpass", 650, 0.8, 0.07, 0.035] }[kind] as [BiquadFilterType, number, number, number, number];
+    f.type = P[0]; f.frequency.value = P[1] * (0.9 + Math.random() * 0.2); f.Q.value = P[2];
+    gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(P[4] * (0.4 + 0.6 * k), t + 0.01); gain.gain.exponentialRampToValueAtTime(0.0005, t + P[3]);
+    src.connect(f); f.connect(gain); gain.connect(g.eng); src.stop(t + P[3] + 0.05);
+  },
+  thud(impact: number) {
+    if (!g || impact < 0.05) return;
+    const c = g.ctx, t = c.currentTime, src = c.createBufferSource(), f = c.createBiquadFilter(), gain = c.createGain();
+    src.buffer = g.noiseBuf; src.loop = true; src.start(0, Math.random() * 2);
+    f.type = "lowpass"; f.frequency.value = 160;
+    gain.gain.setValueAtTime(Math.min(0.6, impact * 0.12), t); gain.gain.setTargetAtTime(0, t + 0.04, 0.09);
+    src.connect(f); f.connect(gain); gain.connect(g.eng); src.stop(t + 0.5);
+  },
+  /** a rain hiss: high-passed noise, level follows the rain (called twice a second while it rains) */
+  rain(level: number) {
+    if (!g) return;
+    const c = g.ctx, t = c.currentTime, src = c.createBufferSource(), f = c.createBiquadFilter(), gain = c.createGain();
+    src.buffer = g.noiseBuf; src.loop = true; src.start(0, Math.random() * 2);
+    f.type = "highpass"; f.frequency.value = 2400;
+    gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.05 * level, t + 0.15); gain.gain.linearRampToValueAtTime(0, t + 0.62);
+    src.connect(f); f.connect(gain); gain.connect(g.amb); src.stop(t + 0.7);
+  },
+  /**
+   * The horn (WEATHER §4): 370 + 466 Hz square through a 1.9 kHz low-pass, into a 0.62 s echo with 38% feedback
+   * off the valley walls (echo = how much wall there is, 0..1). 40% of the time a shepherd's whistle answers 1.7 s later.
+   */
+  /** a firework burst, `delay` s after the flash (sound travels 343 m/s): a low thump with a short crack on top */
+  boom(delay: number, level = 1) {
+    if (!g) return;
+    const c = g.ctx, t = c.currentTime + Math.min(delay, 4), src = c.createBufferSource(), f = c.createBiquadFilter(), gain = c.createGain();
+    src.buffer = g.noiseBuf; src.loop = true; src.start(0, Math.random() * 2);
+    f.type = "lowpass"; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(120, t + 0.6);
+    gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.32 * level / (1 + delay * 0.8), t + 0.01); gain.gain.setTargetAtTime(0, t + 0.04, 0.22);
+    src.connect(f); f.connect(gain); gain.connect(g.amb); src.stop(t + 1.6);
+  },
+  /** crackle: n tiny pops spread over ~1 s */
+  crackle(delay: number, n: number) {
+    if (!g) return;
+    const c = g.ctx;
+    for (let i = 0; i < n; i++) {
+      const t = c.currentTime + Math.min(delay, 5) + Math.random() * 1.0, src = c.createBufferSource(), f = c.createBiquadFilter(), gain = c.createGain();
+      src.buffer = g.noiseBuf; src.start(0, Math.random() * 2); f.type = "highpass"; f.frequency.value = 2200;
+      gain.gain.setValueAtTime(0.05 / (1 + delay * 0.5), t); gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+      src.connect(f); f.connect(gain); gain.connect(g.amb); src.stop(t + 0.07);
+    }
+  },
+  /** a rocket's rising whistle */
+  launch(delay: number) {
+    if (!g) return;
+    const c = g.ctx, t = c.currentTime + delay, o = c.createOscillator(), gain = c.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(2200, t + 1.1);
+    gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.012, t + 0.1); gain.gain.linearRampToValueAtTime(0, t + 1.2);
+    o.connect(gain); gain.connect(g.amb); o.start(t); o.stop(t + 1.3);
+  },
+  /** an owl: two soft low hoots with a breath between */
+  hoot() {
+    if (!g) return;
+    const c = g.ctx, t = c.currentTime;
+    for (const [d, a, b] of [[0, 400, 340], [0.55, 380, 300]]) {
+      const o = c.createOscillator(), gain = c.createGain(), lp = c.createBiquadFilter();
+      o.type = "sine"; o.frequency.setValueAtTime(a, t + d); o.frequency.exponentialRampToValueAtTime(b, t + d + 0.35);
+      lp.type = "lowpass"; lp.frequency.value = 900;
+      gain.gain.setValueAtTime(0, t + d); gain.gain.linearRampToValueAtTime(0.07, t + d + 0.06); gain.gain.linearRampToValueAtTime(0, t + d + 0.42);
+      o.connect(lp); lp.connect(gain); gain.connect(g.amb); o.start(t + d); o.stop(t + d + 0.5);
+    }
+  },
+  horn(echo = 1, pitch = 1) {
     if (!g) return;
     const ctx = g.ctx, t = ctx.currentTime, f = ctx.createBiquadFilter(), v = ctx.createGain();
-    f.type = "lowpass"; f.frequency.value = 1500; v.gain.value = 0;
-    f.connect(v); v.connect(g.eng);
-    [[392, 0], [330, 0.22]].forEach(([hz, d]) => {
-      const o = ctx.createOscillator(); o.type = "square"; o.frequency.value = hz; o.connect(f); o.start(t + d); o.stop(t + d + 0.24);
-    });
-    v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(0.09, t + 0.03); v.gain.setValueAtTime(0.09, t + 0.42); v.gain.linearRampToValueAtTime(0, t + 0.48);
+    if (!g.echo) {
+      const d = ctx.createDelay(2), fb = ctx.createGain(), lp = ctx.createBiquadFilter(), out = ctx.createGain();
+      d.delayTime.value = 0.62; fb.gain.value = 0.38; lp.type = "lowpass"; lp.frequency.value = 1400; out.gain.value = 0;
+      d.connect(lp); lp.connect(fb); fb.connect(d); lp.connect(out); out.connect(g.master);
+      g.echo = { d, out };
+    }
+    g.echo.out.gain.value = 0.55 * echo;
+    f.type = "lowpass"; f.frequency.value = 1900;
+    v.gain.setValueAtTime(0, t); v.gain.linearRampToValueAtTime(0.09, t + 0.03); v.gain.setValueAtTime(0.09, t + 0.45); v.gain.linearRampToValueAtTime(0, t + 0.6);
+    v.connect(f); f.connect(g.eng); if (echo > 0) f.connect(g.echo.d);
+    for (const hz of [370 * pitch, 466 * pitch]) { const o = ctx.createOscillator(); o.type = "square"; o.frequency.value = hz; o.connect(v); o.start(t); o.stop(t + 0.62); }
+    if (echo > 0.3 && Math.random() < 0.4) {
+      const whistle = (a: number, b: number, dur: number, at: number) => {
+        const o = ctx.createOscillator(), w = ctx.createGain(), s = t + at;
+        o.type = "sine"; o.frequency.setValueAtTime(a, s); o.frequency.linearRampToValueAtTime(b, s + dur);
+        w.gain.setValueAtTime(0, s); w.gain.linearRampToValueAtTime(0.03, s + 0.05); w.gain.linearRampToValueAtTime(0, s + dur);
+        o.connect(w); w.connect(g!.amb); o.start(s); o.stop(s + dur + 0.05);
+      };
+      whistle(1800, 2500, 0.35, 1.7); whistle(2500, 1700, 0.45, 2.08);
+    }
   },
 
   /** a small bell, placed in the world (you hear it before you see it) */
@@ -196,12 +305,25 @@ export const audio = {
   update(playing: boolean) {
     if (!g) return;
     const ctx = g.ctx, t = ctx.currentTime, car = live.car;
+    // the soundtrack's mood follows the world; nature wins, so music ducks during cards and camera moments
+    const wx = live.wx, stormy = live.flight.storm > 0.5 || wx.dark > 0.5 && wx.rain > 0.8;
+    g.snd.setMood(stormy ? "storm" : wx.rain > 0.4 ? "rain" : live.env.stars > 0.5 ? "night" : live.env.tod > 2.6 ? "golden" : "day");
+    g.snd.setDuck(!!live.moment || live.ducked);
     const alt = clamp(car.y / 70, 0, 1);
-    g.windG.gain.setTargetAtTime(0.22 + alt * 0.45 + 0.08 * Math.sin(t * 0.23) + 0.06 * Math.sin(t * 0.71), t, 0.8);
+    g.windG.gain.setTargetAtTime(0.22 + alt * 0.45 + (live.flight.on ? Math.min(0.5, Math.abs(car.speed) / 40) : 0) + 0.08 * Math.sin(t * 0.23) + 0.06 * Math.sin(t * 0.71), t, 0.8);
     g.windF.frequency.setTargetAtTime(380 + alt * 500 + 120 * Math.sin(t * 0.4), t, 0.8);
     const valley = live.region === "valley";
     const dPool = valley ? Math.hypot(car.x - POOL.x, car.z - POOL.z) : 999;
     const dRiver = valley && car.z > -84 ? Math.abs(car.x - riverX(car.z)) : 999;
+    // crickets after dusk (not in cloud, snow, rain or wind): quietest near the dawn
+    const night = live.env.stars * (1 - Math.min(1, live.wx.rain + live.wx.snow)) * (1 - alt) * (1 - live.muffle);
+    g.cricketG.gain.setTargetAtTime(0.5 * night * 0.06, t, 1.5);
+    // surf where the sea or a lake is near: swells with the wave, stronger on the cliffs and coast
+    const sea = ["coast", "light", "lake"].includes(live.region);
+    let shore = 0;
+    if (sea) for (const [dx, dz] of [[0, 0], [30, 0], [-30, 0], [0, 30], [0, -30], [60, 0], [-60, 0]]) if (waterLevel(car.x + dx, car.z + dz) > -50) shore = Math.max(shore, 1 - Math.hypot(dx, dz) / 90);
+    g.surfG.gain.setTargetAtTime((live.region === "lake" ? 0.07 : 0.18) * shore, t, 1.2);
+    g.surfF.frequency.setTargetAtTime(500 + 500 * shore, t, 1.2);
     g.waterG.gain.setTargetAtTime(Math.max(0.9 * (1 - smooth(10, 90, dPool)), 0.35 * (1 - smooth(6, 45, dRiver))), t, 0.5);
     if (t > g.nextBird) { if (car.y < 45 && live.muffle < 0.3) chirp(g); g.nextBird = t + 2 + Math.random() * 6; }
     // inside cloud everything goes soft

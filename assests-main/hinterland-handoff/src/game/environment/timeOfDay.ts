@@ -1,4 +1,4 @@
-// Time-of-day palettes (prototype SKY section). t runs 0..4: dawn, morning, day, golden, sunset.
+// Time-of-day palettes (prototype SKY section). t runs 0..5: dawn, morning, day, golden, sunset, night (TIME.md).
 // Everything interpolates; nothing is ever switched abruptly.
 import { Color, MathUtils } from "three";
 import { live } from "../../state/live";
@@ -12,6 +12,8 @@ const RAW: Palette[] = [
   { el: 46, az: 110, sun: "#FFF0D6", si: 1.6,  zen: "#2C62AE", hor: "#CDE1EE", hs: "#A6C0E0", hg: "#46526A", hi: 0.64 }, // day
   { el: 9,  az: 160, sun: "#FFA457", si: 1.5,  zen: "#3A5385", hor: "#F1C496", hs: "#8FA2C6", hg: "#45475A", hi: 0.55 }, // golden
   { el: 2,  az: 175, sun: "#FF8048", si: 1.15, zen: "#2E3A66", hor: "#F2A07C", hs: "#8487B4", hg: "#433E55", hi: 0.46 }, // sunset (J2's summit)
+  // night: the moon takes the sun's place; hemisphere lifted and blue so silhouettes always read
+  { el: 40, az: 300, sun: "#A9BCF0", si: 0.55, zen: "#050A18", hor: "#1B2846", hs: "#34477A", hg: "#141420", hi: 0.5 },
 ];
 // three's ColorManagement converts hex (sRGB) to linear on construction, matching the prototype's lin().
 const PALETTES = RAW.map((p) => ({
@@ -37,4 +39,7 @@ export function applyTimeOfDay(t: number) {
   e.hemiGround.copy(a.hgC).lerp(b.hgC, f);
   e.hemiI = mix(a.hi, b.hi, f);
   e.fogC.copy(e.horC).multiplyScalar(0.94);
+  // stars come in through sunset to night; exposure 1.0, golden 1.08, night 1.3 (lifted so night stays readable)
+  e.stars = smooth(3.9, 5, t);
+  e.exp = t < 3 ? 1 + 0.08 * smooth(2, 3, t) : t < 4 ? 1.08 : mix(1.08, 1.3, smooth(4, 5, t));
 }

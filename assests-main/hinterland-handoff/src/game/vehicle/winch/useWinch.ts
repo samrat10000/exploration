@@ -6,20 +6,21 @@
 import { useEffect, useMemo, type RefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useBeforePhysicsStep, type RapierRigidBody } from "@react-three/rapier";
-import { Group, Mesh, MeshStandardMaterial, QuadraticBezierCurve3, Quaternion, TubeGeometry, Vector3 } from "three";
+import { Euler, Group, Mesh, MeshStandardMaterial, QuadraticBezierCurve3, Quaternion, TubeGeometry, Vector3 } from "three";
 import { live } from "../../../state/live";
 import { useStore } from "../../../state/store";
 import { clamp } from "../../../utils/noise";
 import { ANCHORS } from "../../world/Anchors";
+import type { RegionId } from "../../journeys/journeys";
 import { input } from "../input";
 import { buildHook } from "./WinchModel";
 
-const RANGE = 18, REEL = 1.6, SLIP = 1.1 /* × weight, per second of pull */, THROW = 0.55;
+const RANGE = 18, REEL = 1.6, HAUL_SPEED = 2.4, THROW = 0.55;
 /** cable exit on the Rover (vehicle space) */
 const EXIT = new Vector3(0, 0.72, -2.55);
-const _q = new Quaternion(), _p = new Vector3(), _a = new Vector3(), _d = new Vector3();
+const _q = new Quaternion(), _p = new Vector3(), _a = new Vector3(), _d = new Vector3(), _e = new Euler();
 
-export function useWinch(body: RefObject<RapierRigidBody>, region: "valley" | "kettle") {
+export function useWinch(body: RefObject<RapierRigidBody>, region: RegionId) {
   const camera = useThree((s) => s.camera), gl = useThree((s) => s.gl);
   const parts = useMemo(() => {
     const hook = buildHook(), cable = new Mesh(new TubeGeometry(new QuadraticBezierCurve3(new Vector3(), new Vector3(), new Vector3(0, 0, -1)), 16, 0.014, 5), new MeshStandardMaterial({ color: "#3B3934", roughness: 0.6, metalness: 0.4 }));
@@ -48,33 +49,39 @@ export function useWinch(body: RefObject<RapierRigidBody>, region: "valley" | "k
     return out.copy(EXIT).applyQuaternion(_q.set(r.x, r.y, r.z, r.w)).add(_p.set(t.x, t.y, t.z));
   };
 
-  // the rope: reel, pull, slip; let go on top
+  // the haul: with the hook latched, W winds the Rover along the rope to the boulder's crown (S lowers it back,
+  // letting go drops it). It follows a smooth path (a lift over the rim for a face, a gentle sag across a gap),
+  // nose pitched along the line, and lets go by itself on top. Kinematic on purpose: the rope does the work, the
+  // player chooses when and which ring.
   useBeforePhysicsStep((world) => {
     const w = live.winch, b = body.current;
-    if (!b || w.state !== "latched") return;
-    const dt = world.timestep, a = ANCHORS[region][w.anchor];
+    if (!b) return;
+    if (w.state !== "latched") { w.haul = null; return; }
+    const dt = world.timestep, a = ANCHORS[region][w.anchor], t = b.translation();
     exitWorld(_a);
-    _d.set(a.ring.x - _a.x, a.ring.y - _a.y, a.ring.z - _a.z);
-    const dist = _d.length();
-    // W reels in (the line shortens, the rope pulls); never shorter than the ring is high above the bumper
-    w.length = clamp(w.length + (input.throttle > 0 ? -REEL : input.throttle < 0 ? REEL : 0) * dt, Math.max(0.6, dist - 4), RANGE + 2);
-    const stretch = dist - w.length, m = b.mass();
     w.tension = 0;
-    if (stretch > 0.02 || input.throttle > 0) {
-      _d.divideScalar(dist);
-      const v = b.linvel(), along = v.x * _d.x + v.y * _d.y + v.z * _d.z;
-      // a strong, damped pull along the line; reeling adds a lift so the nose climbs the face (the rope
-      // runs up to the crown, so hauling must raise the vehicle, not only drag it into the rock)
-      const reeling = input.throttle > 0 ? 1 : 0, max = SLIP * m * 24;
-      let f = m * (60 * Math.max(stretch, reeling * 0.4) - 8 * along);
-      if (f > max) { f = max; w.length += (stretch - max / (60 * m)) * 0.5; } // the drum slips, never snaps
-      f = Math.max(0, f);
-      w.tension = f / max;
-      b.applyImpulse({ x: _d.x * f * dt, y: (_d.y * f + reeling * m * 30 * clamp(a.top - b.translation().y + 0.5, 0, 1)) * dt, z: _d.z * f * dt }, true);
+    const wantUp = input.throttle > 0, wantDown = input.throttle < 0;
+    if (!w.haul && wantUp) {
+      const dx = a.crown.x - t.x, dz = a.crown.z - t.z, len = Math.hypot(dx, a.crown.y - t.y, dz);
+      w.haul = { s: 0, len: Math.max(1, len), ax: t.x, ay: t.y, az: t.z };
     }
-    // on top: all four wheels up there, the hook lets go
-    const t = b.translation();
-    if (t.y > a.top - 0.3 && Math.hypot(t.x - a.x, t.z - a.z) < a.r) w.state = "idle";
+    const h = w.haul;
+    if (!h) { w.length = clamp(w.length + (wantDown ? REEL : 0) * dt, 0.6, RANGE + 2); return; }
+    h.s = clamp(h.s + ((wantUp ? 1 : wantDown ? -1 : 0) * HAUL_SPEED * dt) / h.len, 0, 1);
+    const k = h.s * h.s * (3 - 2 * h.s), horiz = Math.hypot(a.crown.x - h.ax, a.crown.z - h.az), up = a.crown.y - h.ay;
+    const lift = up > 1.2 ? 0.7 : -Math.min(1.6, horiz * 0.1);
+    const at = (kk: number) => _p.set(h.ax + (a.crown.x - h.ax) * kk, h.ay + up * kk + lift * Math.sin(Math.PI * kk), h.az + (a.crown.z - h.az) * kk);
+    at(k);
+    const px = _p.x, py = _p.y, pz = _p.z;
+    at(Math.min(1, k + 0.02));
+    const tx = _p.x - px, ty = _p.y - py, tz = _p.z - pz, th = Math.hypot(tx, tz);
+    const yaw = Math.atan2(-(a.crown.x - h.ax), -(a.crown.z - h.az)), pitch = clamp(Math.atan2(ty, Math.max(th, 1e-3)) * 0.8, -0.6, 0.7) * (k > 0.97 ? 0 : 1);
+    _e.set(pitch, yaw, 0, "YXZ"); _q.setFromEuler(_e);
+    b.setTranslation({ x: px, y: py, z: pz }, true); b.setRotation({ x: _q.x, y: _q.y, z: _q.z, w: _q.w }, true);
+    b.setLinvel({ x: 0, y: 0, z: 0 }, true); b.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    w.tension = wantUp ? 0.8 : 0.4; w.length = Math.max(0.6, _a.distanceTo(a.ring));
+    // on top: the hook lets go and the wheels take the weight
+    if (h.s >= 1) { w.state = "idle"; w.haul = null; }
   });
 
   // aim, hook flight, cable drawing

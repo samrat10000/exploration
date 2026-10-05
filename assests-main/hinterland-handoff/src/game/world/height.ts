@@ -119,7 +119,7 @@ export const MAX_PAD_SLOPE = Math.tan((12 * Math.PI) / 180);
 export interface GroundSample { color: import("three").Color; grass: number }
 export interface Prop { x: number; y: number; z: number; s: number }
 export interface RegionGround {
-  id: "valley" | "kettle";
+  id: "valley" | "kettle" | "gorge" | "river" | "forest" | "lake" | "pass" | "sky" | "salt" | "coast" | "light" | "flowers";
   /** true surface (river beds included) */
   height(x: number, z: number): number;
   water(x: number, z: number): number;
@@ -131,8 +131,12 @@ export interface RegionGround {
   groundAt?(x: number, z: number, y: number, ny: number): GroundSample;
   /** trees near a point, for camera occlusion (filled in by props.ts for the valley) */
   treesNear?(x: number, z: number): Prop[];
+  /** which way the water runs here and how fast (m/s, world xz), for boats */
+  flow?(x: number, z: number, out?: import("three").Vector3): import("three").Vector3;
   /** soft edge of the drivable world */
   radius: number;
+  /** world square the ground mesh + physics grid cover (default 640 m) */
+  size?: number;
   /** physics/lookup grid segments over GRID.size (finer where roads are narrow) */
   seg?: number;
   start: { x: number; z: number; yaw: number };
@@ -144,7 +148,7 @@ export const valleyGround: RegionGround = {
 let active: RegionGround = valleyGround;
 export const activeGround = () => active;
 /** Switch the world's ground. Call before mounting the region's scene. */
-export function setGround(g: RegionGround) { active = g; GRID.seg = g.seg ?? 320; }
+export function setGround(g: RegionGround) { active = g; GRID.seg = g.seg ?? 320; GRID.size = g.size ?? 640; }
 
 export const height = (x: number, z: number) => active.height(x, z);
 export const waterLevel = (x: number, z: number) => active.water(x, z);
@@ -160,12 +164,12 @@ const grids = new Map<string, Float32Array>();
 
 /** Row-major [row along z][col along x], (seg+1)^2 samples of the true surface height(). */
 export function heightGrid() {
-  const cached = grids.get(active.id);
+  const key = active.id + GRID.size, cached = grids.get(key);
   if (cached && cached.length === (GRID.seg + 1) ** 2) return cached;
   const { size, seg } = GRID, step = size / seg, W = seg + 1;
   const grid = new Float32Array(W * W);
   for (let r = 0; r < W; r++) for (let c = 0; c < W; c++) grid[r * W + c] = height(-size / 2 + c * step, -size / 2 + r * step);
-  grids.set(active.id, grid);
+  grids.set(key, grid);
   return grid;
 }
 

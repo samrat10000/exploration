@@ -1,4 +1,14 @@
 // Game + UI state shared between the DOM HUD and the canvas.
+import { gorgeGround, gorgeSafePoint } from "../game/world/gorge/gorge";
+import { riverGround, riverSafePoint } from "../game/world/river/river";
+import { forestGround, forestSafePoint } from "../game/world/forest/forest";
+import { lakeGround, lakeSafePoint } from "../game/world/lake/lake";
+import { passGround, passSafePoint } from "../game/world/pass/pass";
+import { skyGround, skySafePoint } from "../game/world/sky/sky";
+import { saltGround, saltSafePoint } from "../game/world/salt/salt";
+import { coastGround, coastSafePoint } from "../game/world/coast/coast";
+import { lightGround, lightSafePoint } from "../game/world/light/light";
+import { flowersGround, flowersSafePoint } from "../game/world/flowers/flowers";
 import { create } from "zustand";
 import { live } from "./live";
 import { SET_KEY, emptySave, loadSave, storage, writeSaveV2, type Postcard, type SaveV2 } from "./save";
@@ -9,7 +19,7 @@ import { clamp } from "../utils/noise";
 import { setGround, valleyGround } from "../game/world/height";
 import { kettleGround, safePointNear } from "../game/world/kettle/kettle";
 
-const REGION_NAME: Record<RegionId, string> = { valley: "The valley", kettle: "Kettle Peak" };
+const REGION_NAME: Record<RegionId, string> = { valley: "The valley", kettle: "Kettle Peak", gorge: "The Boulder Garden", river: "Lantern River", forest: "The Old Forest", lake: "Lake of Islands", pass: "The High Pass", sky: "Sky Road", salt: "The Salt Mirror", coast: "Slow Coast", light: "The Lighthouse", flowers: "Valley of Flowers" };
 
 export type Phase = "loading" | "menu" | "intro" | "play" | "paused" | "ending" | "outro" | "exit";
 export type Quality = "low" | "medium" | "high" | "ultra";
@@ -21,6 +31,23 @@ export interface Settings {
   master: number;
   amb: number;
   eng: number;
+  /** generative soundtrack volume */
+  music: number;
+  /** travelers speak when you stop beside them */
+  travelerLines: boolean;
+  textSize: "s" | "m" | "l";
+  /** render scale on top of the quality preset, 50..100 % */
+  resScale: number;
+  /** frame cap: 30, 60 or off */
+  fpsCap: "30" | "60" | "off";
+  /** flight: W is nose up instead of nose down */
+  invertPitch: boolean;
+  /** drag-to-look speed, 50..150 % */
+  camSens: number;
+  /** hold E / T through a ring, or tap once and let it finish */
+  holdMode: "hold" | "tap";
+  /** stronger text shadows and darker panels behind prompts */
+  contrast: boolean;
   motion: "full" | "calm";
 }
 
@@ -61,6 +88,10 @@ interface Store {
   starting: boolean;
   veilText: string;
   cinema: boolean;
+  /** after the finale: the vehicle to take when wandering a finished region (null = the journey's own) */
+  wanderVehicle: VehicleId | null;
+  /** photo mode is open */
+  photo: boolean;
   settingsOpen: boolean;
   settingsFrom: "menu" | "pause";
   atlasOpen: boolean;
@@ -120,11 +151,21 @@ interface Store {
 const initial = loadSave();
 const s0 = initial ?? emptySave();
 if (s0.session?.region === "kettle") { setGround(kettleGround); live.safePoint = safePointNear; }
+else if (s0.session?.region === "gorge") { setGround(gorgeGround); live.safePoint = gorgeSafePoint; }
+else if (s0.session?.region === "river") { setGround(riverGround); live.safePoint = riverSafePoint; }
+else if (s0.session?.region === "forest") { setGround(forestGround); live.safePoint = forestSafePoint; }
+else if (s0.session?.region === "lake") { setGround(lakeGround); live.safePoint = lakeSafePoint; }
+else if (s0.session?.region === "pass") { setGround(passGround); live.safePoint = passSafePoint; }
+else if (s0.session?.region === "sky") { setGround(skyGround); live.safePoint = skySafePoint; }
+else if (s0.session?.region === "salt") { setGround(saltGround); live.safePoint = saltSafePoint; }
+else if (s0.session?.region === "coast") { setGround(coastGround); live.safePoint = coastSafePoint; }
+else if (s0.session?.region === "light") { setGround(lightGround); live.safePoint = lightSafePoint; }
+else if (s0.session?.region === "flowers") { setGround(flowersGround); live.safePoint = flowersSafePoint; }
 
 export const useStore = create<Store>((set, get) => ({
   phase: "loading",
   settings: {
-    quality: isTouch ? "medium" : "high", master: 80, amb: 80, eng: 60, motion: prefersCalm ? "calm" : "full",
+    quality: isTouch ? "medium" : "high", master: 80, amb: 80, eng: 60, music: 70, travelerLines: true, textSize: "m", resScale: 100, fpsCap: "off", invertPitch: false, camSens: 100, holdMode: "hold", contrast: false, motion: prefersCalm ? "calm" : "full",
     ...(storage.get<Partial<Settings>>(SET_KEY) ?? {}),
   },
   save: initial,
@@ -144,6 +185,8 @@ export const useStore = create<Store>((set, get) => ({
   starting: false,
   veilText: "Raising the mountains",
   cinema: true,
+  wanderVehicle: null,
+  photo: false,
   settingsOpen: false,
   settingsFrom: "menu",
   atlasOpen: false,
@@ -195,8 +238,9 @@ export const useStore = create<Store>((set, get) => ({
     const target = useSave ? { x: sess.x, z: sess.z, yaw: sess.yaw } : start;
     const progress = useSave ? sess.progress : mode === "journey" ? 0 : 1;
     // a journey starts at its own morning; wander keeps whatever light you left
-    live.env.todTarget = useSave ? clamp(sess.tod ?? j.tod.from, 0, 4) : mode === "journey" ? j.tod.from : j.tod.to;
-    const s = get(), swap = region !== s.region || j.vehicle !== s.vehicle;
+    live.env.todTarget = useSave ? clamp(sess.tod ?? j.tod.from, 0, 5) : mode === "journey" ? j.tod.from : j.tod.to;
+    const veh: VehicleId = mode === "wander" && get().wanderVehicle && region !== "gorge" ? get().wanderVehicle! : j.vehicle;
+    const s = get(), swap = region !== s.region || veh !== s.vehicle;
     // a fresh run up the mountain starts with no lanterns lit and no crates left behind
     if (id === "longway" && mode === "journey" && !useSave) set({ extra: { ...get().extra, kettleLanterns: 0, kettleLoose: [] } });
     set({ journey: id, mode, progress, settingsOpen: false, atlasOpen: false, starting: true, pendingEnd: false, cutscene: false, sitting: false, label: null, todFloor: 0 });
@@ -214,11 +258,11 @@ export const useStore = create<Store>((set, get) => ({
     set({ veil: true, veilText: swap && region !== s.region ? REGION_NAME[region] : "" });
     setTimeout(() => {
       if (swap) {
-        setGround(region === "kettle" ? kettleGround : valleyGround);
-        live.safePoint = region === "kettle" ? safePointNear : null;
+        setGround(region === "kettle" ? kettleGround : region === "gorge" ? gorgeGround : region === "river" ? riverGround : region === "forest" ? forestGround : region === "lake" ? lakeGround : region === "pass" ? passGround : region === "sky" ? skyGround : region === "salt" ? saltGround : region === "coast" ? coastGround : region === "light" ? lightGround : region === "flowers" ? flowersGround : valleyGround);
+        live.safePoint = region === "kettle" ? safePointNear : region === "gorge" ? gorgeSafePoint : region === "river" ? riverSafePoint : region === "forest" ? forestSafePoint : region === "lake" ? lakeSafePoint : region === "pass" ? passSafePoint : region === "sky" ? skySafePoint : region === "salt" ? saltSafePoint : region === "coast" ? coastSafePoint : region === "light" ? lightSafePoint : region === "flowers" ? flowersSafePoint : null;
         live.spawnAt = target;
         live.teleport = null;
-        set({ region, vehicle: j.vehicle });
+        set({ region, vehicle: veh });
       }
       // wait until the (new) vehicle has mounted and registered itself
       const ready = () => {
@@ -263,10 +307,12 @@ export const useStore = create<Store>((set, get) => ({
   discover(id) {
     if (get().found.includes(id)) return;
     set({ found: [...get().found, id], postcards: [...get().postcards, { id, tod: live.env.tod }], card: PLACES[id], cinema: true });
+    live.ducked = true; audio.chime();
     get().writeSave();
   },
 
   closeCard() {
+    live.ducked = false;
     const p = get().phase;
     set({ card: null, cinema: p !== "play" && p !== "paused" });
   },

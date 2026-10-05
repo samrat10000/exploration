@@ -41,9 +41,9 @@ export function Grass() {
     const uCam = { value: new Vector2() }, uCar = { value: new Vector2(1e5, 1e5) };
     const mat = new MeshStandardMaterial({ roughness: 1, metalness: 0, side: DoubleSide });
     mat.onBeforeCompile = (sh) => {
-      Object.assign(sh.uniforms, { uTime: U.uTime, uCam, uCar, uHeight: { value: height }, uGround: { value: ground } });
+      Object.assign(sh.uniforms, { uTime: U.uTime, uWet: U.uWet, uSnowC: U.uSnowC, uCam, uCar, uHeight: { value: height }, uGround: { value: ground } });
       sh.vertexShader = /* glsl */ `
-        uniform float uTime; uniform vec2 uCam, uCar; uniform sampler2D uHeight, uGround;
+        uniform float uTime, uWet, uSnowC; uniform vec2 uCam, uCar; uniform sampler2D uHeight, uGround;
         attribute vec2 aOff; attribute vec4 aRnd;
         varying float vH, vFlower; varying vec3 vBase, vTip, vFlowerC;
         ${NOISE_GLSL}
@@ -82,7 +82,7 @@ export function Grass() {
           vec2 dd = p - uCar; float dc = length(dd);
           vec2 push = dc < 2.8 ? dd/max(dc, 0.001)*(2.8 - dc)*0.55 : vec2(0.0);
           transformed.xz += push*position.y*h*2.2; transformed.y -= length(push)*position.y*h*0.9;
-          vBase = srgbToLinear(gs.rgb);
+          vBase = srgbToLinear(gs.rgb) * (1.0 - 0.28*uWet);
           vTip = vBase*vec3(1.14, 1.17, 0.9) + vec3(0.022, 0.026, 0.004) + (aRnd.y - 0.5)*0.03;
           vTip = mix(vTip, vec3(0.42, 0.36, 0.16), oat*0.7);
           vBase *= mix(vec3(1.0), vec3(0.8, 1.05, 0.7), clover); vTip = mix(vTip, vBase*1.15, clover);
@@ -92,9 +92,10 @@ export function Grass() {
         }
         vH = position.y;
       `);
-      sh.fragmentShader = "varying float vH, vFlower; varying vec3 vBase, vTip, vFlowerC;\n" + sh.fragmentShader
+      sh.fragmentShader = "uniform float uSnowC; varying float vH, vFlower; varying vec3 vBase, vTip, vFlowerC;\n" + sh.fragmentShader
         .replace("#include <color_fragment>", /* glsl */ `
           diffuseColor.rgb = mix(vBase, vTip, pow(vH, 1.3));
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.95, 0.98), uSnowC*smoothstep(0.35, 0.9, vH)*0.8);
           if (vFlower > 0.5 && vFlower < 1.5 && vH > 0.74) diffuseColor.rgb = vFlowerC;
           if (vFlower > 1.5 && vH > 0.8) diffuseColor.rgb = vec3(0.64, 0.55, 0.26);`)
         // both faces lit like flat ground (no dark backsides)

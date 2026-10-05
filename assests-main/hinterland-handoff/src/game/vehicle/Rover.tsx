@@ -10,6 +10,7 @@ import { ROVER, T, WHEELS } from "./tuning";
 import { spawnPose, useVehicle, type VehicleParts } from "./useVehicle";
 import { useStore } from "../../state/store";
 import { PAINTS } from "./paints";
+import { dirtify } from "./dirt";
 
 /** The lab model, merged per material; the road wheels move to the controller's pivots. */
 function buildParts(): VehicleParts {
@@ -27,6 +28,7 @@ function buildParts(): VehicleParts {
     spin.add(wheel.clone());
     return { pivot, spin, lx, lz };
   });
+  dirtify(root, [paint]);
   return { root, body, wheels, paint };
 }
 

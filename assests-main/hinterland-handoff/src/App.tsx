@@ -11,6 +11,13 @@ import { Atlas } from "./ui/Atlas";
 import { CampfireMenu, WorldLabel } from "./ui/Campfire";
 import { BusHud } from "./ui/BusHud";
 import { Post } from "./game/environment/Post";
+import { JourneyIntro } from "./ui/JourneyIntro";
+import { PhotoMode } from "./ui/PhotoMode";
+import { FrameCap } from "./game/FrameCap";
+import { LakeHud } from "./ui/LakeHud";
+import { IceFrost } from "./ui/IceFrost";
+import { Credits } from "./ui/Credits";
+import { RiverHud } from "./ui/RiverHud";
 import { RoundsHud } from "./ui/RoundsHud";
 import { Forecast } from "./ui/Forecast";
 import { CampMenu } from "./ui/CampMenu";
@@ -57,7 +64,11 @@ function Ready() {
 }
 
 export default function App() {
-  const quality = useStore((s) => s.settings.quality);
+  const quality = useStore((s) => s.settings.quality), resScale = useStore((s) => s.settings.resScale);
+  const textSize = useStore((s) => s.settings.textSize);
+  useEffect(() => { document.body.dataset.ts = textSize; }, [textSize]);
+  const contrast = useStore((s) => s.settings.contrast);
+  useEffect(() => { document.body.dataset.contrast = contrast ? "1" : ""; }, [contrast]);
   useUiKeys();
 
   // browsers only allow audio after a gesture
@@ -76,12 +87,13 @@ export default function App() {
           id="world"
           aria-label="A mountain valley with a parked expedition rover"
           shadows={{ type: PCFSoftShadowMap }}
-          dpr={Math.min(window.devicePixelRatio || 1, QUALITY[quality].pr)}
+          dpr={Math.min(window.devicePixelRatio || 1, QUALITY[quality].pr) * (resScale / 100)}
           camera={{ fov: 55, near: 0.3, far: 1900 }}
-          gl={{ antialias: true, powerPreference: "high-performance" }}
+          gl={{ antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: true }}
           onCreated={({ gl }) => { gl.toneMappingExposure = 1.05; }}
         >
           <Suspense fallback={null}>
+            <FrameCap />
             <World />
             <Post />
             <Ready />
@@ -89,6 +101,8 @@ export default function App() {
         </Canvas>
       </GlBoundary>
       <Letterbox />
+      <JourneyIntro />
+      <PhotoMode />
       <Title />
       <Settings />
       <Pause />
@@ -97,6 +111,11 @@ export default function App() {
       <FlightHud />
       <BusHud />
       <RoundsHud />
+      <RiverHud />
+      <Credits />
+      <div id="rotate" aria-hidden="true"><p>Turn your device sideways</p><small>Hinterland is best in landscape.</small></div>
+      <IceFrost />
+      <LakeHud />
       <Forecast />
       <CampMenu />
       <WorldLabel />

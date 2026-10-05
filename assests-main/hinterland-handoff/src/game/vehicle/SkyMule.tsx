@@ -70,7 +70,7 @@ export function SkyMule({ kind = "skymule" }: { kind?: FlierKind }) {
       if (store.cinema !== (s.t > 0 && s.t < UNFOLD)) useStore.setState({ cinema: s.t > 0 && s.t < UNFOLD });
       if (s.phase === "unfold" && s.t >= UNFOLD) {
         // off the ridge: a gentle push out over the edge
-        s.phase = "fly"; f.v = 16; f.onGround = false; f.y += 0.6; f.safe = { x: f.x, y: f.y + 8, z: f.z, yaw: f.yaw };
+        s.phase = "fly"; f.v = 16; f.onGround = false; f.y += 3; f.safe = { x: f.x, y: f.y + 8, z: f.z, yaw: f.yaw };
       }
       if (s.phase === "fold" && s.t <= 0) {
         live.spawnAt = { x: f.x, z: f.z, yaw: f.yaw };
@@ -80,7 +80,7 @@ export function SkyMule({ kind = "skymule" }: { kind?: FlierKind }) {
     } else if (s.phase === "fly") {
       prop = live.flight.puffing ? 1 : 0.25;
       const near = map.landings.find((l) => Math.hypot(f.x - l.x, f.z - l.z) < l.r + 2);
-      const res = playing && s.recover < 0 ? stepFlight(f, map, dt, input.throttle, input.steer, !glider && input.brake, !!near && agl(f) < 6, live.flight.turb) : "ok";
+      const res = playing && s.recover < 0 ? stepFlight(f, map, dt, (store.settings.invertPitch ? -input.throttle : input.throttle), input.steer, !glider && input.brake, !!near && agl(f) < 6, live.flight.turb) : "ok";
       if (live.flight.slow) { f.v *= 0.85; live.flight.slow = 0; }
       if (res === "touch" && s.touchT <= 0) { addShake(0.25); s.touchT = 0.6; }
       s.touchT -= dt;

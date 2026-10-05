@@ -30,6 +30,9 @@ export const live = {
     hemiSky: new Color(),
     hemiGround: new Color(),
     hemiI: 0.55,
+    /** 0..1 stars + Milky Way, and the exposure the grade applies (night is lifted) */
+    stars: 0,
+    exp: 1,
   },
   /** menu <-> chase camera glide, 0..1 */
   trans: { t: 0, dur: 4.6 },
@@ -50,7 +53,7 @@ export const live = {
   /** a region can offer a better safe point (e.g. the nearest point back along its trail) */
   safePoint: null as null | ((x: number, z: number) => { x: number; z: number; yaw: number }),
   /** which region is loaded (audio and other systems that care) */
-  region: "valley" as "valley" | "kettle",
+  region: "valley" as "valley" | "kettle" | "gorge" | "river" | "forest" | "lake" | "pass" | "sky" | "salt" | "coast" | "light" | "flowers",
   /** 0..1 how muffled the world sounds (inside cloud) */
   muffle: 0,
   /** 0..1 closeness to a campfire */
@@ -92,15 +95,40 @@ export const live = {
   /** make camp (§1.12): prompt + what the camp is doing */
   camp: { forecast: false, prompt: false, hold: 0, lantern: false, cookT: 0, line: "", lineT: 0 },
   /** grapple winch (§1.9) */
-  winch: { aiming: false, target: -1, state: "idle" as "idle" | "flying" | "latched", anchor: -1, t: 0, length: 0, tension: 0 },
+  winch: { aiming: false, target: -1, state: "idle" as "idle" | "flying" | "latched", anchor: -1, t: 0, length: 0, tension: 0, haul: null as null | { s: number; len: number; ax: number; ay: number; az: number } },
   /** dev panel (F3) overrides and readouts; only dev builds ever change these */
+  /** photo mode: orbit around the vehicle, lens index, time nudge (tod units) */
+  photo: { yaw: 0, pitch: 0.2, dist: 8, lens: 1, nudge: 0 },
+  /** weather state (Weather.tsx): 0..1 amounts, wetness, settled snow, rainbow timer, sky darkening */
+  wx: { rain: 0, mist: 0, snow: 0, wet: 0, snowCover: 0, rainbowT: 0, peak: 0, dark: 0 },
+  /** fireworks (Fireworks.tsx): launch a shell, a volley, or run a festival show at an origin */
+  fireworks: null as null | { launch(pos: { x: number; y: number; z: number }, height: number, type?: string): void; volley(pos: { x: number; y: number; z: number }, n?: number): void; show(origin: { x: number; y: number; z: number } | null, spread?: number, height?: number): void },
+  /** 0..1: a meteor shower is on (SkyExtras sends a shooting star every ~0.3 s) */
+  shower: 0,
+  /** a discovery card is up: the music ducks */
+  ducked: false,
+  /** Lantern River: which shrines have their lantern, the one in reach, the hold ring */
+  river: { lit: [false, false, false, false, false] as boolean[], prompt: false, hold: 0, target: -1 },
+  /** Lake of Islands: which islands have their post, the jetty in reach, the hold ring */
+  lake: { done: [] as boolean[], prompt: false, hold: 0, target: -1 },
+  /** the finale's credits: on, seconds since they began */
+  credits: { on: false, t: 0 },
+  /** lightning flash 0..1 (screen flash, any region) */
+  bolt: 0,
+  /** weather the region forces (the pass is always snowing); thin-ice frost amount 0..1 */
+  wxForce: null as null | "clear" | "mist" | "rain" | "snow",
+  ice: 0,
+  /** seeds: can a seed be planted here right now */
+  garden: { can: false },
+  /** one quiet line at the bottom (a rainbow, a thought) */
+  note: { text: "", t: 0 },
   /** post-processing values (ART §3); the dev panel edits these */
-  post: { on: true, exposure: 1, bloom: 0.35, ao: 1.4, aoRadius: 1.6, vignette: 0.28, sat: 0.92 },
+  post: { on: true, exposure: 1, bloom: 0.35, ao: 0.8, aoRadius: 1.2, vignette: 0.28, sat: 0.92 },
   dev: {
     panel: false, freeCam: false, colliders: false, spline: false, triggers: false, slow: false, hideUi: false,
     /** fixed time of day, or null to follow the journey */
     tod: null as number | null,
-    weather: null as null | "clear" | "fog" | "snow",
+    weather: null as null | "clear" | "fog" | "mist" | "rain" | "snow",
     stats: { fps: 0, ms: 0, calls: 0, tris: 0 },
     /** put the free camera at `from`, looking at `to` (consumed once) */
     look: null as null | { from: [number, number, number]; to: [number, number, number] },

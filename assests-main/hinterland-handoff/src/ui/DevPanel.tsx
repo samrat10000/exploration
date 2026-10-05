@@ -80,11 +80,11 @@ export default function DevPanel() {
 
       <div className="sec">
         <div className="row"><span>time</span><span>{clockAt(tod)} · tod {tod.toFixed(2)}{d.tod === null ? " · auto" : ""}</span></div>
-        <input type="range" min={0} max={4} step={0.01} value={tod} aria-label="Time of day"
+        <input type="range" min={0} max={5} step={0.01} value={tod} aria-label="Time of day"
           onChange={(e) => { d.tod = +e.target.value; re(); }} onPointerUp={(e) => e.currentTarget.blur()} />
         <div>
           <Chip on={d.tod === null} onClick={() => { d.tod = null; re(); }}>auto</Chip>
-          {(["clear", "fog", "snow"] as const).map((w) => <Chip key={w} on={d.weather === w} onClick={() => { d.weather = d.weather === w ? null : w; re(); }}>{w === "fog" ? "fog band" : w}</Chip>)}
+          {(["clear", "mist", "rain", "snow", "fog"] as const).map((w) => <Chip key={w} on={d.weather === w} onClick={() => { d.weather = d.weather === w ? null : w; re(); }}>{w === "fog" ? "fog band" : w}</Chip>)}
         </div>
       </div>
 

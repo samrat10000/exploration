@@ -3,6 +3,7 @@
 import { clamp, damp } from "../../utils/noise";
 import { POOL, START, VP, groundHeight, height } from "../world/height";
 import type { RegionId } from "../journeys/journeys";
+import { SKY_MAP } from "../world/sky/sky";
 
 // Numbers are skyroad.js's flight model (the prototype) unless noted.
 export const FT = {
@@ -43,6 +44,16 @@ export const SKY: Record<RegionId, SkyMap> = {
     storms: [{ x: -10, z: 120, r: 60, y0: 40, y1: 140 }],
   },
   kettle: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
+  gorge: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
+  river: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
+  forest: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
+  lake: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
+  pass: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
+  sky: SKY_MAP,
+  salt: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
+  coast: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
+  light: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
+  flowers: { launches: [], thermals: [], landings: [], flocks: [], storms: [] },
 };
 
 export interface FlightState {
@@ -126,7 +137,7 @@ export function stepFlight(s: FlightState, map: SkyMap, dt: number, pitchIn: num
     s.bank *= 0.5;
     if (flare || s.v < 11) { s.v *= Math.exp(-(flare ? 1.6 : 2.4) * dt); s.vy = 0; return s.v < 3 ? "land" : "touch"; }
     s.vy = down * 0.25; // a little bounce
-    s.v *= 0.92;
+    s.v *= Math.exp(-5 * dt); // skimming the ground sheds speed by time, not by frame (was 0.92 per step)
     return "touch";
   }
   return "ok";

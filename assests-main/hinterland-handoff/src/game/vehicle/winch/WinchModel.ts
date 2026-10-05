@@ -26,6 +26,15 @@ export function buildWinchDrum() {
 /** where the cable leaves the drum, in the drum's space */
 export const DRUM_EXIT = new Vector3(0, 0.7, -0.4);
 
+/** Just the ring set in a rim (for boulders that are part of the terrain): iron plate, ring and a soft glint. */
+export function buildRing() {
+  const g = new Group();
+  add(g, box(0.3, 0.05, 0.3), M("#4A4740", 0.5, 0.7), [0, 0.6, -0.12], [-0.25, 0, 0]);
+  add(g, new TorusGeometry(0.12, 0.025, 8, 18), M("#6E6A63", 0.35, 0.85), [0, 0.6, -0.05], [-1.2, 0, 0]);
+  g.userData = { glint: add(g, new SphereGeometry(0.05, 8, 6), glow("#FFE7B0", 1.4), [0.08, 0.66, -0.02]) };
+  return g;
+}
+
 /**
  * An anchor boulder: the ring sits on the boulder's face at `ring` (relative to the group), with an
  * iron plate behind it and a soft glint (userData.glint) so the player reads the world, not a marker.

@@ -27,6 +27,7 @@ function leg(a: Journey, b: Journey) {
 function MapView({ on }: { on: boolean }) {
   const done = useStore((s) => s.done), found = useStore((s) => s.found), justFinished = useStore((s) => s.justFinished);
   const { startJourney } = useStore.getState();
+  const allOpen = useStore((s) => !!s.extra.allOpen), wanderVehicle = useStore((s) => s.wanderVehicle);
   const states = JOURNEYS.map((j) => atlasState(j.id, done));
   const firstSel = Math.max(0, states.indexOf("next"));
   const [sel, setSel] = useState(firstSel);
@@ -155,6 +156,13 @@ function MapView({ on }: { on: boolean }) {
             {!p.playable ? `${p.title} is still being made` : st === "done" ? "Drive it again" : "Begin"}
           </button>
           <button hidden={st !== "done" || !p.playable} onClick={() => startJourney(p.id, "wander")}>Wander here</button>
+          {allOpen && st === "done" && p.playable && (
+            <div className="opts" role="group" aria-label="Wander with">
+              {([["rover", "Rover"], ["mule", "Mule"], ["tortoise", "Tortoise"], ["bus", "The Loaf"], ["snowcat", "Snowcat"]] as const).map(([v, n]) => (
+                <button key={v} aria-pressed={wanderVehicle === (v === p.vehicle ? null : v)} onClick={() => useStore.setState({ wanderVehicle: v === p.vehicle ? null : v })}>{n}</button>
+              ))}
+            </div>
+          )}
         </div>
       </aside>
     </section>

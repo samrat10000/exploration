@@ -10,7 +10,8 @@ import { clamp, damp } from "../../utils/noise";
 import { mergeByMaterial } from "../art/kit";
 import { glowTexture } from "../environment/textures";
 import { addShake } from "../camera/CameraRig";
-import { height, waterLevel } from "../world/height";
+import { activeGround, height, waterLevel } from "../world/height";
+import { Vector3 } from "three";
 import { SLIPWAYS } from "../world/Slipways";
 import { attachDriveInput, clearDriveInput, input, readInput } from "./input";
 import { buildBoatKit } from "./rover/BoatKit";
@@ -20,7 +21,7 @@ import { spawnPose } from "./useVehicle";
 
 const SHIFT = 3, HOLD = 1.2, MAX = 9, REV = 3, ACCEL = 3.2, DRAG = 0.5, DRAFT = 0.75;
 const deep = (x: number, z: number) => waterLevel(x, z) - height(x, z) > DRAFT;
-const WAKE = 110;
+const WAKE = 110, _flow = new Vector3();
 
 function buildModel() {
   const rover = buildRover(), paint = rover.userData.paint as MeshStandardMaterial, wheels = rover.userData.wheels as Group[];
@@ -84,7 +85,9 @@ export function Boat() {
       s.v += clamp(want - s.v, -ACCEL * dt, ACCEL * dt) - s.v * DRAG * dt * (input.throttle ? 0 : 1);
       s.turn += (input.steer * (0.25 + Math.min(1, Math.abs(s.v) / 5) * 0.55) - s.turn) * damp(3, dt);
       s.yaw += s.turn * Math.sign(s.v || 1) * dt;
-      const nx = s.x - Math.sin(s.yaw) * s.v * dt, nz = s.z - Math.cos(s.yaw) * s.v * dt;
+      // the current carries the boat downstream (rivers); none on still water
+      const fl = activeGround().flow?.(s.x, s.z, _flow);
+      const nx = s.x - Math.sin(s.yaw) * s.v * dt + (fl ? fl.x * dt : 0), nz = s.z - Math.cos(s.yaw) * s.v * dt + (fl ? fl.z * dt : 0);
       // keep to water deep enough to float: test the bow, nudge off the bank
       const bx = nx - Math.sin(s.yaw) * 2.4 * Math.sign(s.v || 1), bz = nz - Math.cos(s.yaw) * 2.4 * Math.sign(s.v || 1);
       if (deep(nx, nz) && deep(bx, bz)) { s.x = nx; s.z = nz; }

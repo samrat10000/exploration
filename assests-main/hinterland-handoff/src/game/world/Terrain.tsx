@@ -1,3 +1,4 @@
+import { patchGround } from "../shaders";
 // Terrain mesh (vertex-coloured) + the matching Rapier heightfield.
 import { useEffect, useMemo } from "react";
 import { BufferAttribute, PlaneGeometry } from "three";
@@ -44,7 +45,7 @@ export function Terrain() {
 
   return (
     <mesh geometry={geometry} receiveShadow>
-      <meshStandardMaterial vertexColors roughness={0.96} metalness={0} />
+      <meshStandardMaterial vertexColors roughness={0.96} metalness={0} onBeforeCompile={patchGround} />
     </mesh>
   );
 }

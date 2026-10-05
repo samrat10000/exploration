@@ -9,7 +9,9 @@ import { hash } from "../../utils/noise";
 import { C, M, VC, add, bakeStatic, box, cyl, h3, mixC, paintFaces } from "../art/kit";
 import { input } from "../vehicle/input";
 import type { RegionId } from "../journeys/journeys";
-import { POOL, height, riverX } from "./height";
+import { POOL, height, riverX, waterLevel } from "./height";
+import { SLIPWAY } from "./river/river";
+import { SLIPWAY as LAKE_SLIP } from "./lake/lake";
 
 /** x, z: the water end of the ramp; yaw: facing out over the water (forward = -Z). */
 export interface Slipway { x: number; z: number; yaw: number }
@@ -17,6 +19,16 @@ const bank = (z: number, side: number): Slipway => ({ x: riverX(z) + side * 7, z
 export const SLIPWAYS: Record<RegionId, Slipway[]> = {
   valley: [bank(150, 1), bank(POOL.z + 40, -1)],
   kettle: [],
+  gorge: [],
+  river: [SLIPWAY],
+  forest: [],
+  lake: [LAKE_SLIP],
+  pass: [],
+  sky: [],
+  salt: [],
+  coast: [],
+  light: [],
+  flowers: [],
 };
 const HOLD = 1.2;
 
@@ -46,7 +58,7 @@ function SlipwayAt({ s }: { s: Slipway }) {
       }
     } else if (live.flight.prompt === "boat" && live.vehicle === "rover" && d < 12) { live.flight.prompt = ""; live.flight.hold = 0; }
   });
-  return <primitive object={model} position={[s.x, Math.max(height(s.x, s.z), 0.6), s.z]} rotation-y={s.yaw} />;
+  return <primitive object={model} position={[s.x, Math.max(height(s.x, s.z), waterLevel(s.x, s.z) > -50 ? waterLevel(s.x, s.z) + 0.05 : 0.6), s.z]} rotation-y={s.yaw} />;
 }
 
 export function Slipways() {

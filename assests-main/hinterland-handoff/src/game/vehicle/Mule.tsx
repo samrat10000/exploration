@@ -8,6 +8,7 @@ import { useStore } from "../../state/store";
 import { mergeByMaterial } from "../art/kit";
 import { useCargo } from "./cargo";
 import { buildMule, muleRopes } from "./mule/MuleModel";
+import { dirtify } from "./dirt";
 import { PAINTS } from "./paints";
 import { MT, MULE } from "./tuning";
 import { spawnPose, useVehicle, type VehicleParts } from "./useVehicle";
@@ -35,6 +36,7 @@ function buildParts(): VehicleParts & { rack: Group; ropes: Group; paintDark: Me
     spin.add(mergeByMaterial(modelWheels[i]));
     return { pivot, spin, lx, lz };
   });
+  dirtify(root, [paint, paintDark]);
   return { root, body, wheels, paint, paintDark, rack, ropes };
 }
 
@@ -48,6 +50,8 @@ export function Mule() {
   // wandering Kettle Peak after the journey: an empty rack, and any crates still lying on the mountain
   const opts = useMemo(() => {
     const s = useStore.getState();
+    // the Lighthouse run carries one heavy generator, not a rack of crates
+    if (s.region === "light") return { aboard: 1 };
     if (s.region !== "kettle" || s.mode !== "wander") return {};
     return { aboard: 0, looseAt: ((s.extra.kettleLoose as { x: number; y: number; z: number }[] | undefined) ?? []).slice(0, SLOTS.length) };
   }, []);

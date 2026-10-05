@@ -1,13 +1,13 @@
 // Forecast (screens.html → Forecast): after helping the weather station, sleeping at camp offers
 // tomorrow's weather as four plain-text choices. Arrows pick, Enter confirms. Clear and Mist change the
-// fog; Rain and First snow are saved but have no weather of their own yet (STATUS: Not real yet).
+// fog; Mist, Rain and First snow arrive slowly as real weather (Weather.tsx).
 import { useEffect, useState } from "react";
 import { live } from "../state/live";
 import { useStore } from "../state/store";
 
 export const FORECASTS = [["clear", "Clear", "sun all day"], ["mist", "Mist", "mornings in cloud"], ["rain", "Rain", "soft, then a rainbow"], ["snow", "First snow", "high ground only"]] as const;
 /** fog multiplier a forecast asks of the sky */
-export const forecastFog = (f: unknown) => (f === "clear" ? 0.8 : f === "mist" ? 4 : f === "snow" ? 0.75 : 1);
+export const forecastFog = (f: unknown) => (f === "clear" ? 0.8 : 1);
 
 export function Forecast() {
   const [, tick] = useState(0), [sel, setSel] = useState(2);

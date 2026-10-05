@@ -99,3 +99,10 @@
 #atlas .grid h3.stamps small{display:block;font-size:13px;font-weight:300;opacity:.6;font-family:inherit}
 #atlas .stampcard{display:flex;align-items:center;justify-content:center;min-height:130px}
 #atlas .stampcard .stamp{background:none}
+#atlas .mods .opts{display:flex;gap:16px;flex-wrap:wrap}
+#atlas .mods .opts button{font-size:14px;color:var(--aink-faint);border-bottom:1px solid transparent;padding:2px 0}
+#atlas .mods .opts button[aria-pressed="true"]{color:var(--aink);border-bottom-color:var(--asun)}
+#atlas .mods .opts button:disabled{font-style:italic;cursor:default}
+#atlas .mods dd small{display:block;margin-top:5px;font-size:12px;font-weight:300;color:var(--aink-dim)}
+#atlas .vpick{flex-wrap:wrap}
+#atlas .nav .opts{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;width:100%}#atlas .nav .opts button{font-size:14px;color:var(--aink-faint);border-bottom:1px solid transparent;padding:2px 0}#atlas .nav .opts button[aria-pressed="true"]{color:var(--aink);border-bottom-color:var(--asun)}

@@ -8,7 +8,6 @@ import { Bloom, EffectComposer, N8AO, SMAA, ToneMapping, Vignette } from "@react
 import { Color, Uniform } from "three";
 import { live } from "../../state/live";
 import { useStore } from "../../state/store";
-import { clamp } from "../../utils/noise";
 
 class ExposureFx extends Effect {
   constructor() { super("Exposure", "uniform float uExposure; void mainImage(const in vec4 c, const in vec2 uv, out vec4 o){ o = vec4(c.rgb*uExposure, c.a); }", { uniforms: new Map([["uExposure", new Uniform(1)]]) }); }
@@ -38,8 +37,8 @@ export function Post() {
   useFrame(() => {
     const p = live.post;
     if (on !== p.on) setOn(p.on);
-    // golden hour is 8% brighter (ART §3)
-    (exposure.uniforms.get("uExposure") as Uniform).value = p.exposure * (1 + 0.08 * clamp((live.env.tod - 2) / 0.85, 0, 1));
+    // golden hour +8%, night +30% (timeOfDay.ts)
+    (exposure.uniforms.get("uExposure") as Uniform).value = p.exposure * live.env.exp;
     (grade.uniforms.get("uSat") as Uniform).value = p.sat;
     if (bloom.current) bloom.current.intensity = p.bloom;
     if (vig.current) vig.current.darkness = p.vignette;
@@ -48,9 +47,12 @@ export function Post() {
   if (quality === "low" || !on) return null;
   const hi = quality === "high" || quality === "ultra";
   return (
-    <EffectComposer multisampling={hi ? 4 : 0} enableNormalPass={false}>
+    <EffectComposer multisampling={0} enableNormalPass={false}>
+      <N8AO aoRadius={live.post.aoRadius} intensity={live.post.ao} distanceFalloff={1} halfRes={!hi} quality={hi ? "medium" : "low"} ref={ao as never} />
       <Bloom ref={bloom as never} intensity={live.post.bloom} luminanceThreshold={0.85} luminanceSmoothing={0.25} mipmapBlur />
+      <primitive object={exposure} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      <primitive object={grade} />
       <Vignette ref={vig as never} darkness={live.post.vignette} offset={0.35} blendFunction={BlendFunction.NORMAL} />
       <SMAA />
     </EffectComposer>

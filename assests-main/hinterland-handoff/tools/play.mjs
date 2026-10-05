@@ -1,5 +1,5 @@
 // Headless playtest: node play.mjs <outPrefix> [script...]
-// script steps: "wait:ms" "shot:name" "click:Text" "hold:KeyW,KeyA:ms" "eval:js" "clear"
+// env TOUCH=1 / TOUCH=portrait emulates a phone. script steps: "wait:ms" "shot:name" "click:Text" "hold:KeyW,KeyA:ms" "eval:js" "clear"
 import puppeteer from "puppeteer-core";
 const [, , prefix = "shot", ...steps] = process.argv;
 const browser = await puppeteer.launch({
@@ -12,6 +12,8 @@ const page = await browser.newPage();
 const logs = [];
 page.on("console", (m) => { if (["error", "warning"].includes(m.type())) logs.push(`[${m.type()}] ${m.text()}`); });
 page.on("pageerror", (e) => logs.push(`[pageerror] ${e.message}`));
+// TOUCH=1 (landscape phone) or TOUCH=portrait: coarse pointer, touch events, mobile viewport
+if (process.env.TOUCH) await page.setViewport(process.env.TOUCH === "portrait" ? { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { width: 844, height: 390, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 await page.goto("http://localhost:5179/", { waitUntil: "load" });
 const state = async () => page.evaluate(() => {
   const h = window.__hl; if (!h) return "no __hl";

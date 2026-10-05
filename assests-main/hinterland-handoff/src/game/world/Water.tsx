@@ -4,7 +4,7 @@ import { Color, ShaderMaterial, Vector2 } from "three";
 import { FOG_GLSL, NOISE_GLSL, OUTPUT_GLSL, U } from "../shaders";
 import { TARN, WATER } from "./height";
 
-function waterMaterial(opts: { calm: number; center?: Vector2; radius?: number }) {
+export function waterMaterial(opts: { calm: number; center?: Vector2; radius?: number }) {
   return new ShaderMaterial({
     transparent: true,
     uniforms: {

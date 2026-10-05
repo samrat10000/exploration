@@ -31,6 +31,14 @@ export const HUTS: Hut[] = [
   { id: "bees", kind: "bees", name: "Beekeeper", keeper: "Odo", order: { jars: 1 }, gift: { honey: 1 }, giftText: "3 pots of honey", line: "Jars! The bees have been impatient. Take some honey for the bakery.", colour: "#D9A93A", emblem: "★", x: 76, z: -34, yaw: 0 },
   { id: "stars", kind: "stars", name: "Star-watcher", keeper: "Wen", order: { lens: 1, tea: 1 }, gift: {}, giftText: "a night of meteors", line: "A clean lens and hot tea. Come back after dark, and keep looking up.", colour: "#3B4A6B", emblem: "✦", unlock: "meteors", x: 4, z: -46, yaw: 0 },
 ];
+/** what each keeper says on a later round (the second stamp for their hut) */
+export const LINE2: Record<string, string> = {
+  tea: "Back already? The kettle remembers you.",
+  weather: "Ines taps the glass: \"Fair, for once. Tell your engine I said so.\"",
+  bakery: "Dov slides over a second loaf. \"For the road, again.\"",
+  bees: "Odo hums. \"The bees know the sound of your wheels now.\"",
+  stars: "Wen points up. \"Same sky, new season. Stay a minute.\"",
+};
 export const DEPOT = { x: 76, z: 50, yaw: 0 };
 /** a yaw that turns a door (local −z) toward a point */
 const facing = (x: number, z: number) => Math.atan2(-(DEPOT.x - x), -(DEPOT.z - z));

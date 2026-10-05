@@ -5,7 +5,7 @@
 // longitudinal speed, grip and yaw are driven toward the prototype's arcade targets so the feel
 // stays forgiving: gravity's downhill pull is cancelled while grounded and replaced by the soft
 // slope drag from CLAUDE.md §4. Collisions with trees, rocks and the ground are pure Rapier.
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useAfterPhysicsStep, useBeforePhysicsStep, useRapier, type RapierRigidBody } from "@react-three/rapier";
 import { obstacleColliders } from "../world/kettle/KettleObstacles";
@@ -14,6 +14,9 @@ import { live } from "../../state/live";
 import { useStore } from "../../state/store";
 import { clamp, damp, smooth } from "../../utils/noise";
 import { activeGround, gripAt, groundHeight, height, waterLevel } from "../world/height";
+import { audio } from "../audio/audio";
+import { handling } from "./mods";
+import { attachDecor } from "./decor";
 import { addShake } from "../camera/CameraRig";
 import { attachDriveInput, clearDriveInput, input, readInput } from "./input";
 import type { VehicleSpec } from "./tuning";
@@ -80,6 +83,7 @@ export function useVehicle(parts: VehicleParts, spec: VehicleSpec, onStep?: (s: 
   }, [spec]);
 
   useEffect(() => attachDriveInput(), []);
+  const decor = useMemo(() => attachDecor(parts.body, spec.id), [parts, spec]);
 
   useEffect(() => {
     live.teleport = (x, z, yaw) => {
@@ -175,12 +179,13 @@ export function useVehicle(parts: VehicleParts, spec: VehicleSpec, onStep?: (s: 
       const vf = lin.dot(f), vr = lin.dot(rt);
       const slope = f.y / Math.max(1e-3, Math.hypot(f.x, f.z));
       const wet = height(t.x, t.z) < waterLevel(t.x, t.z) - 0.25;
-      let maxF = wet ? T.maxWater : T.maxForward;
+      const hm = handling();
+      let maxF = (wet ? T.maxWater : T.maxForward) * hm.speed;
       // a loaded Mule labours uphill
       if (spec.loadedUphillMax) maxF -= (maxF - Math.min(maxF, spec.loadedUphillMax)) * live.cargo.load * smooth(0, 0.1, slope);
 
       // surface: mud and snow take grip; full throttle on mud mostly spins the wheel
-      const grip0 = spec.tracked ? 1 : gripAt(t.x, t.z), spin = 1 - (1 - grip0) * smooth(0.35, 1, Math.abs(thr));
+      const grip0 = (spec.tracked ? 1 : gripAt(t.x, t.z)) * hm.grip, spin = 1 - (1 - grip0) * smooth(0.35, 1, Math.abs(thr));
       live.spin = grip0 < 1 && Math.abs(thr) > 0.6 ? 1 - grip0 : 0;
       let sp = vf;
       if (thr > 0) sp += sp < -0.5 ? T.turnaround * dt : T.accel * spin * thr * dt * Math.max(0, 1 - sp / maxF);
@@ -255,7 +260,7 @@ export function useVehicle(parts: VehicleParts, spec: VehicleSpec, onStep?: (s: 
     // landings: weight you can feel
     if (grounded === 0) st.airTime += dt;
     else {
-      if (st.airTime > 0.25) addShake(clamp(-vyBefore * 0.05, 0, 0.7));
+      if (st.airTime > 0.25) { addShake(clamp(-vyBefore * 0.05, 0, 0.7)); audio.thud(-vyBefore); }
       st.airTime = 0;
     }
     st.grounded = grounded;
@@ -322,6 +327,7 @@ export function useVehicle(parts: VehicleParts, spec: VehicleSpec, onStep?: (s: 
 
   // visuals + live state, after physics has interpolated the body (priority -40 > physics -50)
   useFrame((_, dt) => {
+    decor();
     const holder = parts.root.parent;
     if (!holder) return;
     const p = holder.position, c = live.car;

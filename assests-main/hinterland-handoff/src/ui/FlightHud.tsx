@@ -38,7 +38,7 @@ export function FlightHud() {
         </div>
       )}
       {fl.on && playing && fl.storm > 0.02 && <div className="stormfx" style={{ opacity: fl.storm }}><div className="rainfx" /></div>}
-      {fl.on && fl.flash > 0.01 && <div className="bolt" style={{ opacity: fl.flash * 0.7 }} />}
+      {Math.max(fl.on ? fl.flash : 0, live.bolt) > 0.01 && <div className="bolt" style={{ opacity: Math.max(fl.on ? fl.flash : 0, live.bolt) * 0.7 }} />}
       {fl.on && fl.hit > 0.01 && playing && <div className="birdhit" style={{ opacity: fl.hit }} />}
       {fl.on && fl.warn > 0 && playing && <p id="weathernote" style={{ opacity: Math.min(1, fl.warn) }}>Weather coming in</p>}
       {showSlow && playing && <p id="flighthint">Nose down to pick up speed</p>}

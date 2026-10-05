@@ -1,4 +1,5 @@
 // The Loaf: lab model + physics body on the shared controller (BUS spec). Route logic: world/BusRoute.tsx.
+import { dirtify } from "./dirt";
 import { useMemo } from "react";
 import { Group } from "three";
 import { CuboidCollider, RigidBody } from "@react-three/rapier";
@@ -21,6 +22,7 @@ function buildParts(): VehicleParts {
     spin.add(wheel.clone());
     return { pivot, spin, lx, lz };
   });
+  dirtify(root);
   return { root, body, wheels };
 }
 

@@ -13,6 +13,7 @@ import { crateMesh } from "../../vehicle/cargo";
 import { CLOUD_TOP } from "./CloudSea";
 import { FEATURES, HUT, kettleGround, pointAt } from "./kettle";
 import { BELLS, CAMPS, CRATE_STACK, TRAVELER } from "./layout";
+import { LINES, speak } from "../../life/travelers";
 
 export const ENDING_LINES = {
   all: "Every crate. The keeper says he'll owe you one.",
@@ -109,7 +110,7 @@ export function KettleBeats() {
     if (live.moment && live.moment.t >= live.moment.dur) { live.moment = null; if (useStore.getState().phase === "play" && !s.card) useStore.setState({ cinema: false }); }
 
     /* the traveller at the farm */
-    const nearTraveler = Math.hypot(car.x - TRAVELER.x, car.z - TRAVELER.z) < 7 && Math.abs(car.speed) < 0.8;
+    const farm = speak([{ id: "farm", x: TRAVELER.x, y: TRAVELER.y + 2.3, z: TRAVELER.z, lines: LINES.farm }], car, dt, t);
     /* campfires: arriving saves; hold E to sit */
     let fire = 0, campNear: (typeof CAMPS)[number] | null = null;
     for (const c of CAMPS) {
@@ -197,7 +198,7 @@ export function KettleBeats() {
 
     /* who's talking: one short line above them, while you're stopped nearby */
     let label: typeof s.label = null;
-    if (nearTraveler && !s.sitting) label = { text: "Mind the corners with a full rack.", x: TRAVELER.x, y: TRAVELER.y + 2.3, z: TRAVELER.z };
+    if (farm && !s.sitting) label = farm;
     else if (campNear && playing && !s.sitting && Math.abs(car.speed) < 0.5) label = { text: "Hold E to sit a while", x: campNear.x, y: campNear.y + 1.6, z: campNear.z };
     else if (t - st.keeperSaid < 7) label = st.keeperLabel;
     if (label?.text !== s.label?.text) useStore.setState({ label });

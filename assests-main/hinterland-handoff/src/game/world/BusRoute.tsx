@@ -19,11 +19,26 @@ const MID = { x: (ROUTE.ax + ROUTE.bx) / 2, z: (ROUTE.az + ROUTE.bz) / 2 };
 /** Route stops per region (the valley holds the sandbox loop; J10 brings its own). */
 export const STOPS: Record<RegionId, Stop[]> = {
   valley: [
+    // the sandbox loop and Market Day (J10) share these seven stops: the last one is the fair
     { name: "Riverbend", x: START.x + 9, z: START.z - 14, yaw: 0.4 },
+    { name: "Bakery Row", x: -92, z: 98, yaw: 1.0 },
+    { name: "Goat Farm", x: -128, z: 110, yaw: -0.4 },
+    { name: "The Vineyard", x: -104, z: 50, yaw: 0.6 },
     { name: "Meadow Gate", x: MID.x + 14, z: MID.z, yaw: -1.2 },
     { name: "Highfall Lane", x: POOL.x + 34, z: POOL.z + 30, yaw: 2.2 },
+    { name: "The Fair", x: 88, z: 40, yaw: -2.0 },
   ],
   kettle: [],
+  gorge: [],
+  river: [],
+  forest: [],
+  lake: [],
+  pass: [],
+  sky: [],
+  salt: [],
+  coast: [],
+  light: [],
+  flowers: [],
 };
 
 const SEATS = 12, OPEN = 0.6, STEP = 0.6;
@@ -32,7 +47,7 @@ const say = (line: string) => { live.bus.line = line; live.bus.lineT = 5; };
 export function BusRoute() {
   const region = useStore((s) => s.region), stops = STOPS[region];
   const models = useMemo(() => stops.map(() => bakeStatic(buildBusStop())), [stops]);
-  const st = useRef({ waiting: [3, 2, 4], refill: [0, 0, 0], last: -1, at: -1, hold: 0, doors: -1, timer: 0, rung: new Set<number>(), passed: new Set<number>(), steadyT: 0, calmT: 0, humT: 0 }).current;
+  const st = useRef({ waiting: [3, 2, 3, 2, 3, 2, 0], refill: [0, 0, 0, 0, 0, 0, 0], last: -1, rough: 0, ended: -1, visited: new Set<number>(), at: -1, hold: 0, doors: -1, timer: 0, rung: new Set<number>(), passed: new Set<number>(), steadyT: 0, calmT: 0, humT: 0 }).current;
 
   useFrame((_, dt) => {
     const s = useStore.getState(), on = live.vehicle === "bus" && s.phase === "play";
@@ -59,6 +74,12 @@ export function BusRoute() {
           seats.push(dest);
         } else {
           st.last = st.doors; st.doors = -1;
+          // Market Day: the fair at the end of the line; every stop counts toward the journey
+          const s = useStore.getState();
+          if (s.mode === "journey" && s.journey === "market") {
+            st.visited.add(st.last); s.setProgress(st.visited.size / n);
+            if (st.last === n - 1 && st.ended < 0) st.ended = 0;
+          }
           st.rung.clear(); st.passed.clear();
           say(seats.length ? `Doors close. Next stop: ${stops[(st.last + 1) % n].name}.` : "Doors close. Nobody aboard for now.");
         }
@@ -81,9 +102,16 @@ export function BusRoute() {
       }
     }
 
+    // the fair at dusk: everyone waves as they get off, then the journey ends with a line that depends on the ride
+    if (st.ended >= 0) {
+      st.ended += dt;
+      if (st.ended > 5 && useStore.getState().phase === "play") { useStore.getState().setExtra("endingLine", st.rough === 0 ? "Not a single egg broken." : "A bumpy one. They're still smiling."); useStore.getState().finishJourney(); st.ended = -2; }
+    }
+
     // comfort: no score, only reactions
     st.steadyT -= dt; st.humT -= dt;
     const rough = Math.abs(live.latAccel) > 4.5 || Math.abs(car.accel) > 7;
+    if (rough && seats.length && st.steadyT <= 0) st.rough++;
     if (seats.length && rough && st.steadyT <= 0) { say(hash(live.clock, 1) < 0.5 ? "Steady!" : "A chicken flaps somewhere at the back."); st.steadyT = 10; st.calmT = 0; }
     st.calmT = rough ? 0 : st.calmT + dt;
     if (seats.length && st.calmT > 40 && st.humT <= 0) { say("Someone hums a tune at the back."); st.humT = 70; st.calmT = 0; }

@@ -9,7 +9,7 @@ import { live } from "../../state/live";
 import { useStore } from "../../state/store";
 import { bakeStatic, box, cyl, M, add } from "../art/kit";
 import { buildPerson } from "../life/person";
-import { HUTS, DEPOT, SEASONS, bagText, count, loadPlan, missing, CAPACITY, type Bag, type Hut } from "../rounds/rounds";
+import { HUTS, DEPOT, LINE2, SEASONS, bagText, count, loadPlan, missing, CAPACITY, type Bag, type Hut } from "../rounds/rounds";
 import { input } from "../vehicle/input";
 import { height } from "./height";
 import { HUT_FRONT, buildHut } from "./props/huts";
@@ -81,11 +81,15 @@ export function HutRounds() {
       stamps[h.id] = [...new Set([...(stamps[h.id] ?? []), season])];
       s.setExtra("stamps", stamps);
       if (h.unlock) s.setExtra("gift-" + h.unlock, true);
-      r.visit = { hut: h.id, name: h.name, keeper: h.keeper, line: h.line, given: bagText(h.order), received: h.giftText, stamp: season, emblem: h.emblem, colour: h.colour, t: 0 };
+      r.visit = { hut: h.id, name: h.name, keeper: h.keeper, line: (stamps[h.id]?.length ?? 0) > 1 ? LINE2[h.id] : h.line, given: bagText(h.order), received: h.giftText, stamp: season, emblem: h.emblem, colour: h.colour, t: 0 };
       useStore.setState({ cinema: true });
       if (!st.visited.has(h.id)) { st.visited.add(h.id); live.moment = { x: near.x, y: height(near.x, near.z) + 2, z: near.z, t: 0, dur: 5 }; }
-      // the whole round done: a new day's orders, and a new season's stamps
-      if (r.delivered.length === HUTS.length) {
+      const journey = s.mode === "journey" && s.journey === "hutrounds";
+      if (journey) s.setProgress(r.delivered.length / HUTS.length);
+      // the whole round done: in the journey, the ridge lights up and it ends; otherwise a new day's orders and a new season's stamps
+      if (r.delivered.length === HUTS.length && journey) {
+        setTimeout(() => { s.setExtra("endingLine", "The ridge knows your engine now."); s.finishJourney(); }, 7500);
+      } else if (r.delivered.length === HUTS.length) {
         setTimeout(() => { r.delivered = []; r.doneAt = {}; s.setExtra("roundDay", day + 1); r.note = "New orders have come in for tomorrow."; r.noteT = 6; }, 8000);
       }
     }

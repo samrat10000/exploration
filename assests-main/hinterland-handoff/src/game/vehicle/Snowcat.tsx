@@ -1,5 +1,6 @@
 // The Snowcat (JOURNEYS §2.2): lab model on the shared controller (tracked: never slides), a sled
 // towed on a hitch (it swings wide on the turns), and deep track marks pressed into snow behind it.
+import { dirtify } from "./dirt";
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Color, Group, InstancedMesh, MeshStandardMaterial, Object3D, PlaneGeometry, Vector3 } from "three";
@@ -27,6 +28,7 @@ function buildParts() {
     pivot.position.set(lx, ST.wheelRadius, lz); pivot.add(spin); root.add(pivot);
     return { pivot, spin, lx, lz };
   });
+  dirtify(root);
   const parts: VehicleParts = { root, body, wheels };
   return { parts, sled: bakeStatic(sledSrc) };
 }

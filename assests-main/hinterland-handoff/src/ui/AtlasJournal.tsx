@@ -1,5 +1,7 @@
 // Journal: a card for every place you've found, drawn in the light you found it in.
+import { useEffect, useState } from "react";
 import { useStore } from "../state/store";
+import { listPhotos, type Photo } from "../game/photo";
 import { PLACES, placesIn } from "../game/exploration/discoveries";
 import { JOURNEYS, atlasState } from "../game/journeys/journeys";
 import { HUTS } from "../game/rounds/rounds";
@@ -16,11 +18,14 @@ function light(tod: number): { sky: [string, string]; name: string } {
 export function AtlasJournal({ on }: { on: boolean }) {
   const postcards = useStore((s) => s.postcards), found = useStore((s) => s.found), done = useStore((s) => s.done);
   const regions = [...new Set(JOURNEYS.filter((j) => j.region && atlasState(j.id, done) !== "locked").map((j) => j.region!))];
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  useEffect(() => { if (on) void listPhotos().then(setPhotos); }, [on]);
   const stamps = (useStore((s) => s.extra.stamps) as Record<string, string[]> | undefined) ?? {};
   const missing = regions.flatMap((r) => placesIn(r)).filter((id) => !found.includes(id)).length;
   return (
     <section className={`view${on ? " on" : ""}`} aria-label="Journal">
       <div className="grid">
+        {photos.map((ph) => <figure className="card" key={ph.id}><img className="ph" src={ph.url} alt="" /><p>{ph.name}</p><small>Photo</small></figure>)}
         {postcards.filter((p) => p.id in PLACES).map((p, i) => {
           const place = PLACES[p.id as keyof typeof PLACES], l = light(p.tod);
           return (

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useStore } from "../state/store";
 import { PAINTS, PAINT_NAMES, ownedPaints } from "../game/vehicle/paints";
+import { CHARMS, HORNS, RACKS, TYRES, earned, modsOf, setMod } from "../game/vehicle/mods";
 
 type V = "rover" | "mule";
 
@@ -61,6 +62,23 @@ export function AtlasGarage({ on }: { on: boolean }) {
   const muleKnown = done.includes("overlook");
   const [veh, setVeh] = useState<V>("rover");
   const owned = ownedPaints(veh, rewards), c = PAINTS[veh][paint[veh]];
+  const m = modsOf(veh), tyre = TYRES[m.tyres];
+  const note = tyre.grip === 1 && tyre.speed === 1 ? tyre.line : `${tyre.line} (grip ${tyre.grip > 1 ? "+" : "−"}${Math.round(Math.abs(tyre.grip - 1) * 100)}%, top speed ${tyre.speed > 1 ? "+" : "−"}${Math.round(Math.abs(tyre.speed - 1) * 100)}%)`;
+  const mods = (
+    <>
+      <dt>Tyres</dt>
+      <dd>
+        <div className="opts">{Object.entries(TYRES).map(([k, t]) => { const ok = earned(t.need); return <button key={k} aria-pressed={m.tyres === k} disabled={!ok} title={ok ? t.line : "Earned on a journey"} onClick={() => setMod(veh, "tyres", k)}>{ok ? t.name : "Earned later"}</button>; })}</div>
+        <small>{note}</small>
+      </dd>
+      <dt>Rack</dt>
+      <dd><div className="opts">{Object.entries(RACKS).map(([k, r]) => { const ok = earned(r.need); return <button key={k} aria-pressed={m.rack === k} disabled={!ok} onClick={() => setMod(veh, "rack", k)}>{ok ? r.name : "Earned later"}</button>; })}</div></dd>
+      <dt>Charm</dt>
+      <dd><div className="opts">{Object.entries(CHARMS).map(([k, r]) => { const ok = earned(r.need); return <button key={k} aria-pressed={m.charm === k} disabled={!ok} onClick={() => setMod(veh, "charm", k)}>{ok ? r.name : "Earned later"}</button>; })}</div></dd>
+      <dt>Horn</dt>
+      <dd><div className="opts">{Object.entries(HORNS).map(([k, h]) => { const ok = earned(h.need); return <button key={k} aria-pressed={m.horn === k} disabled={!ok} onClick={() => setMod(veh, "horn", k)}>{ok ? h.name : "Earned later"}</button>; })}</div></dd>
+    </>
+  );
   const lantern = rewards.includes("rover-roof-lantern");
   return (
     <section className={`view${on ? " on" : ""}`} aria-label="Garage">
@@ -71,8 +89,8 @@ export function AtlasGarage({ on }: { on: boolean }) {
         <div className="mods">
           <div className="vpick">
             <button aria-pressed={veh === "rover"} onClick={() => setVeh("rover")}>Rover</button>
-            <button aria-pressed={veh === "mule"} disabled={!muleKnown} onClick={() => setVeh("mule")}>{muleKnown ? "Mule" : "Mule, later"}</button>
-            <button disabled>Snowcat, later</button>
+            <button aria-pressed={veh === "mule"} disabled={!muleKnown} onClick={() => setVeh("mule")}>{muleKnown ? "Mule" : "Not found yet"}</button>
+            {["Tortoise", "The Loaf", "Sky Mule", "Snowcat"].map((n) => <button key={n} disabled>Not found yet</button>)}
           </div>
           <h2>{veh === "mule" ? "The Mule" : "The Rover"}</h2>
           <p className="line">{veh === "mule" ? "Three wheels, a wooden rack and no hurry. Go slow on the corners." : "Steady on almost anything. The one you started with."}</p>
@@ -91,9 +109,9 @@ export function AtlasGarage({ on }: { on: boolean }) {
               </div>
             </dd>
             {veh === "mule" ? (
-              <><dt>Rack</dt><dd>Rope ties</dd><dt>Tyres</dt><dd>Standard</dd><dt>Charm</dt><dd>Little bell</dd><dt>Horn</dt><dd>Two-tone</dd></>
+              <>{mods}</>
             ) : (
-              <><dt>Rack</dt><dd>{lantern ? "Roof rack, with a lantern" : "Roof rack"}</dd><dt>Tyres</dt><dd>All-terrain</dd><dt>Charm</dt><dd>None yet</dd><dt>Horn</dt><dd>Low and polite</dd></>
+              <>{mods}</>
             )}
           </dl>
         </div>

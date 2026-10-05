@@ -1,5 +1,6 @@
 // Left-half drag stick for touch screens.
-import { useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { live } from "../state/live";
 import { isTouch, useStore } from "../state/store";
 import { touch } from "../game/vehicle/input";
 import { clamp } from "../utils/noise";
@@ -7,6 +8,10 @@ import { Layer } from "./Layer";
 
 export function TouchStick() {
   const on = useStore((s) => s.phase === "play") && isTouch;
+  const [, tick] = useState(0);
+  useEffect(() => { if (!on) return; const id = setInterval(() => tick((n) => n + 1), 200); return () => clearInterval(id); }, [on]);
+  const act = on && (live.camp.prompt || live.bus.prompt || !!live.rounds.prompt || !!live.flight.prompt);
+  const hold = (k: "brake" | "action") => ({ onPointerDown: (e: PointerEvent) => { e.currentTarget.setPointerCapture(e.pointerId); touch[k] = true; }, onPointerUp: () => { touch[k] = false; }, onPointerCancel: () => { touch[k] = false; } });
   const st = useRef({ id: -1, x0: 0, y0: 0 }).current;
   const [stick, setStick] = useState<{ x: number; y: number; dx: number; dy: number } | null>(null);
 
@@ -33,6 +38,10 @@ export function TouchStick() {
     <>
       <Layer on={on} id="touch">
         <div style={{ position: "absolute", inset: 0 }} onPointerDown={down} onPointerMove={move} onPointerUp={end} onPointerCancel={end} />
+      </Layer>
+      <Layer on={on} id="tbtn">
+        <button className="brake" aria-label="Brake" {...hold("brake")} />
+        {act && <button className="act" aria-label="Hold to act" {...hold("action")}>E</button>}
       </Layer>
       <div id="stick" className={stick ? "on" : ""} style={stick ? { left: stick.x, top: stick.y } : undefined}>
         <i style={stick ? { transform: `translate(${stick.dx * 36}px,${stick.dy * 36}px)` } : undefined} />

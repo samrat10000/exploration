@@ -1,5 +1,5 @@
 // Make camp menu (screens.html → "Make camp (Tortoise)"): four plain-text choices around "Camp · Saved".
-// Arrow keys pick by direction, Enter confirms, Esc packs up. Photo joins when photo mode exists (3.6).
+// Arrow keys pick by direction, Enter confirms, Esc packs up. Take a photo opens photo mode.
 import { useEffect, useRef, useState } from "react";
 import { live } from "../state/live";
 import { useStore } from "../state/store";
@@ -9,7 +9,7 @@ const OPTIONS: { dir: Dir; label: string; act: () => void }[] = [
   { dir: "up", label: "Light the lantern", act: () => { live.camp.lantern = !live.camp.lantern; say(live.camp.lantern ? "The lantern glows. Moths find it at once." : "The lantern goes out."); } },
   { dir: "right", label: "Cook something", act: () => { live.camp.cookT = 8; say("Something sizzles in the pan."); } },
   { dir: "down", label: "Sleep until morning", act: () => sleep() },
-  { dir: "left", label: "Pack up", act: () => useStore.setState({ sitting: false }) },
+  { dir: "left", label: "Take a photo", act: () => { useStore.setState({ sitting: false }); setTimeout(() => dispatchEvent(new KeyboardEvent("keydown", { code: "KeyP" })), 50); } },
 ];
 function say(line: string) { live.camp.line = line; live.camp.lineT = 4; }
 function sleep() {

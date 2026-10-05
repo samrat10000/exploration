@@ -2,7 +2,7 @@
 import { forecastFog } from "../../ui/Forecast";
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { BackSide, DirectionalLight, FogExp2, HemisphereLight, Mesh, ShaderMaterial } from "three";
+import { BackSide, Color, DirectionalLight, FogExp2, HemisphereLight, Mesh, ShaderMaterial } from "three";
 import { live } from "../../state/live";
 import { QUALITY, useStore } from "../../state/store";
 import { damp } from "../../utils/noise";
@@ -13,6 +13,8 @@ import { fogAt, journey } from "../journeys/journeys";
 
 /** smoothed weather values, shared with anything that wants to react to fog */
 export const weather = { fog: 1 };
+const GREY = new Color();
+const STARS = { value: 0 };
 
 // three >= r155 uses physically based light units; the prototype (r128) used legacy units.
 // Multiplying by PI gives the same brightness on standard materials.
@@ -28,10 +30,13 @@ export function Sky() {
     () =>
       new ShaderMaterial({
         side: BackSide, depthWrite: false, fog: false, toneMapped: false,
-        uniforms: { uZen: { value: zenith }, uHor: U.uSky, uSunC: U.uSunC, uSunDir: U.uSunDir },
+        uniforms: { uZen: { value: zenith }, uHor: U.uSky, uSunC: U.uSunC, uSunDir: U.uSunDir, uStars: STARS, uTime: U.uTime },
         vertexShader: /* glsl */ `varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
         fragmentShader: /* glsl */ `
-          varying vec3 vDir; uniform vec3 uZen, uHor, uSunC, uSunDir;
+          varying vec3 vDir; uniform vec3 uZen, uHor, uSunC, uSunDir; uniform float uStars, uTime;
+          float hh(vec3 p){ return fract(sin(dot(p, vec3(127.1,311.7,74.7)))*43758.5453); }
+          float nn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+            return mix(mix(mix(hh(i),hh(i+vec3(1,0,0)),f.x),mix(hh(i+vec3(0,1,0)),hh(i+vec3(1,1,0)),f.x),f.y),mix(mix(hh(i+vec3(0,0,1)),hh(i+vec3(1,0,1)),f.x),mix(hh(i+vec3(0,1,1)),hh(i+vec3(1,1,1)),f.x),f.y),f.z); }
           void main(){
             vec3 d = normalize(vDir); float y = d.y;
             vec3 col = mix(uHor, uZen, pow(smoothstep(0.0, 0.65, y), 0.75));
@@ -39,7 +44,16 @@ export function Sky() {
             float s = max(dot(d, uSunDir), 0.0);
             col += uSunC*(pow(s, 6.0)*0.22 + pow(s, 48.0)*0.45);
             col += uSunC*pow(s, 2.5)*0.14*(1.0 - smoothstep(0.0, 0.35, y));
-            col = mix(col, vec3(1.0, 0.97, 0.9)*1.6, smoothstep(0.99935, 0.99975, s));
+            float day = 1.0 - uStars;
+            col = mix(col, vec3(1.0, 0.97, 0.9)*1.6, smoothstep(0.99935, 0.99975, s)*day);
+            // night: moon disc + glow, twinkling stars, a soft Milky Way band
+            col += vec3(0.85, 0.9, 1.0)*(smoothstep(0.99955, 0.9998, s)*1.6 + pow(s, 40.0)*0.25)*uStars;
+            if (uStars > 0.01 && y > -0.02){
+              vec3 q = d*240.0; float st = step(0.9965, hh(floor(q)))*(0.55 + 0.45*sin(uTime*2.0 + hh(floor(q))*40.0));
+              vec3 band = normalize(vec3(0.3, 0.75, -0.6));
+              float mw = exp(-pow(dot(d, band)*4.0, 2.0))*(0.6 + 0.6*nn(d*6.0) + 0.3*nn(d*18.0));
+              col += (vec3(st) + vec3(0.55, 0.6, 0.8)*mw*0.22)*uStars*smoothstep(-0.02, 0.15, y);
+            }
             gl_FragColor = vec4(col, 1.0);
             #include <colorspace_fragment>
           }`,
@@ -87,26 +101,28 @@ export function Sky() {
     }
     if (live.dev.tod !== null) env.tod = env.todTarget = live.dev.tod;
     applyTimeOfDay(env.tod);
+    STARS.value = env.stars;
     updateGlow(env.tod);
 
     const l = sun.current, h = hemi.current, car = live.car;
     l.color.copy(env.sunC);
-    l.intensity = env.sunI * LEGACY;
+    l.intensity = env.sunI * LEGACY * (1 - live.wx.dark * 0.7);
     l.position.set(car.x + env.sunDir.x * 160, car.y + env.sunDir.y * 160, car.z + env.sunDir.z * 160);
     l.target.position.set(car.x, car.y, car.z);
     h.color.copy(env.hemiSky);
     h.groundColor.copy(env.hemiGround);
-    h.intensity = env.hemiI * LEGACY;
+    h.intensity = env.hemiI * LEGACY * (1 - live.wx.dark * 0.3);
 
     const fog = scene.fog as FogExp2 | null;
     if (fog) {
-      fog.color.copy(env.fogC);
+      const wx = live.wx;
+      fog.color.copy(env.fogC).lerp(GREY.set(0.5, 0.54, 0.6).multiplyScalar(0.35 + 0.65 * (1 - env.stars) * 0.9), Math.max(wx.rain * 0.7, wx.mist * 0.55, wx.snow * 0.6));
       // journey weather: fog keyed to route progress (the menu keeps the plain preset)
       const dw = live.dev.weather;
       const w = dw ? (dw === "fog" ? 16 : dw === "snow" ? 0.75 : 1)
         : phase === "menu" || phase === "loading" || st.mode === "wander" ? 1 : fogAt(journey(st.journey).weather, st.progress);
       weather.fog += (w * (dw ? 1 : forecastFog(st.extra.forecast)) - weather.fog) * damp(0.8, dt);
-      fog.density = QUALITY[st.settings.quality].fog * weather.fog;
+      fog.density = QUALITY[st.settings.quality].fog * weather.fog * (1 + wx.rain * 2.2 + wx.mist * 4.5 + wx.snow * 2.8);
     }
     U.uFogC.value.copy(env.fogC);
     U.uFogD.value = fog ? fog.density : 0.0028;

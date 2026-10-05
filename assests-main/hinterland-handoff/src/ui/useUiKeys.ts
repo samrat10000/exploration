@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { useStore } from "../state/store";
 import { live } from "../state/live";
+import { HORNS, modsOf } from "../game/vehicle/mods";
 import { audio } from "../game/audio/audio";
 
 export function useUiKeys() {
@@ -18,11 +19,12 @@ export function useUiKeys() {
         return;
       }
       if (e.code === "KeyH" && s.phase === "play") {
-        // the Mule has a horn (goats move for it); the Rover's H keeps the hints toggle
-        if (s.vehicle === "mule") { if (!e.repeat) { audio.horn(); live.honk = live.clock; } }
+        // the Mule, Loaf, Tortoise and Snowcat have a horn (goats move for it, valleys echo it); the Rover's H keeps the hints toggle
+        if (["mule", "bus", "tortoise", "snowcat", "boat"].includes(s.vehicle)) { if (!e.repeat) { audio.horn(live.car.air ? 0 : s.region === "valley" ? 1 : 0.6, HORNS[modsOf(s.vehicle === "boat" ? "rover" : s.vehicle).horn]?.pitch ?? 1); live.honk = live.clock; } }
         else s.toggleHints();
         return;
       }
+      if (e.code === "KeyM" && !e.repeat) { const on = audio.toggleMusic(); live.note.text = on ? "Music on" : "Music off"; live.note.t = 2; return; }
       if (e.code === "F9" && import.meta.env.DEV) { e.preventDefault(); s.devSwapVehicle(); return; }
       if ((e.code === "ArrowUp" || e.code === "ArrowDown") && s.phase !== "play") {
         const panel = ["settings", "pause", "menu", "ending", "campfire", "exit"].map((id) => document.getElementById(id)).find((p) => p?.classList.contains("on"));

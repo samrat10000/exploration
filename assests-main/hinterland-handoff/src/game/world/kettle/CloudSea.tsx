@@ -9,6 +9,7 @@ import { useStore } from "../../../state/store";
 import { hash, smooth } from "../../../utils/noise";
 import { FOG_GLSL, NOISE_GLSL, OUTPUT_GLSL, U } from "../../shaders";
 import { FEATURES, kettleGround, pointAt } from "./kettle";
+import { CloudSet, makeCloudSet } from "../../environment/CozyClouds";
 
 export const CLOUD_TOP = pointAt(FEATURES.cloudTop).h - 3;
 
@@ -47,7 +48,9 @@ export function CloudSea() {
   ], []);
   const geo = useMemo(() => new PlaneGeometry(2600, 2600, 1, 1).rotateX(-Math.PI / 2), []);
   useEffect(() => () => { geo.dispose(); layers.forEach((l) => l.m.dispose()); }, [geo, layers]);
-  return <>{layers.map((l, i) => <mesh key={i} geometry={geo} material={l.m} position-y={l.y} renderOrder={2} />)}</>;
+  // the lumpy puff tops sit on the shader floor: a sea you can look across
+  const tops = useMemo(() => { const c = makeCloudSet(); c.sea(-900, 900, -900, 900, CLOUD_TOP + 1, 110, 5); return c; }, []);
+  return <>{layers.map((l, i) => <mesh key={i} geometry={geo} material={l.m} position-y={l.y} renderOrder={2} />)}<CloudSet set={tops} /></>;
 }
 
 /** Light snow on the last turn, in a box that follows the camera. */
