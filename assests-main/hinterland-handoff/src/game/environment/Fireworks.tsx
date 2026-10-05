@@ -64,7 +64,7 @@ function buildSystem(scene: { add(...o: unknown[]): void }, S = 1) {
     const L = lights[li++ % 3]; L.position.set(x, y, z); L.color.copy(c1).lerp(white, 0.3); L.intensity = 9 * LIGHT;
     puffSmoke(x, y, z, c1.clone().multiplyScalar(0.5), 5, 10 * S);
     const d = cam.position.distanceTo(new Vector3(x, y, z));
-    audio.boom(d / 343, type === "willow" ? 0.7 : 1); if (type === "crackle") audio.crackle(d / 343 + 1.3, 30);
+    audio.boom(d / 343, type === "willow" ? 0.7 : 1); // crackle shells sparkle silently: their pops read as a hiss
   };
   let showT = 2, finaleT = 40, finaleN = 0, origin: { x: number; y: number; z: number } | null = null, spread = 30, height = 90;
   const jitter = () => ({ x: origin!.x + (R() - 0.5) * spread, y: origin!.y, z: origin!.z + (R() - 0.5) * spread });
@@ -83,7 +83,7 @@ function buildSystem(scene: { add(...o: unknown[]): void }, S = 1) {
     for (let i = rockets.length - 1; i >= 0; i--) {
       const r = rockets[i]; r.fuse -= dt; r.vy -= 9.8 * S * dt; r.x += r.vx * dt; r.y += r.vy * dt; r.z += r.vz * dt;
       spark(r.x, r.y, r.z, (R() - 0.5) * S, -2 * S - R() * 2 * S, (R() - 0.5) * S, 0.45 + R() * 0.3, PAL.gold, 1.4 * S, 2, 3 * S, { flick: 0.6 });
-      if (R() < 0.25) puffSmoke(r.x, r.y, r.z, new Color(0.25, 0.23, 0.22), 1, 1);
+      if (R() < 0.1) puffSmoke(r.x, r.y, r.z, new Color(0.25, 0.23, 0.22), 1, 1);
       if (r.fuse <= 0) { burst(r.x, r.y, r.z, r.type, r.pal, cam); rockets.splice(i, 1); }
     }
     for (let i = 0; i < MAX; i++) {
@@ -117,7 +117,7 @@ function buildSystem(scene: { add(...o: unknown[]): void }, S = 1) {
 
 export function Fireworks() {
   const scene = useThree((s) => s.scene);
-  const fw = useMemo(() => buildSystem(scene), [scene]);
+  const fw = useMemo(() => buildSystem(scene, 1.25), [scene]);
   useEffect(() => {
     live.fireworks = fw.api;
     const key = (e: KeyboardEvent) => {

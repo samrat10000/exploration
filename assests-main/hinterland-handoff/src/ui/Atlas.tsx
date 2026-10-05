@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type Keyboard
 import { useStore } from "../state/store";
 import { JOURNEYS, atlasState, type Journey } from "../game/journeys/journeys";
 import { placesIn } from "../game/exploration/discoveries";
+import { ROSTER, UNLOCK_ALL } from "../game/vehicle/roster";
 import { Layer } from "./Layer";
 import { AtlasGarage } from "./AtlasGarage";
 import { AtlasJournal } from "./AtlasJournal";
@@ -27,7 +28,7 @@ function leg(a: Journey, b: Journey) {
 function MapView({ on }: { on: boolean }) {
   const done = useStore((s) => s.done), found = useStore((s) => s.found), justFinished = useStore((s) => s.justFinished);
   const { startJourney } = useStore.getState();
-  const allOpen = useStore((s) => !!s.extra.allOpen), wanderVehicle = useStore((s) => s.wanderVehicle);
+  const wanderVehicle = useStore((s) => s.wanderVehicle);
   const states = JOURNEYS.map((j) => atlasState(j.id, done));
   const firstSel = Math.max(0, states.indexOf("next"));
   const [sel, setSel] = useState(firstSel);
@@ -126,7 +127,7 @@ function MapView({ on }: { on: boolean }) {
                 )}
                 {s === "next" && <circle r={6} fill="#ECE3CF" stroke={INK} strokeWidth={1.6} className="dot" />}
                 {s === "locked" && <circle r={4} fill="none" stroke={INK} strokeOpacity={0.35} strokeDasharray="2 2" className="dot" />}
-                <text x={14} y={j.atlas.y < 160 ? 24 : -14}>{s === "locked" ? "Beyond the ridge" : j.title}</text>
+                <text x={j.atlas.x > 880 ? -14 : 14} textAnchor={j.atlas.x > 880 ? "end" : "start"} y={j.atlas.y < 160 ? 24 : -14}>{s === "locked" ? "Beyond the ridge" : j.title}</text>
               </g>
             );
           })}
@@ -155,11 +156,12 @@ function MapView({ on }: { on: boolean }) {
           <button ref={beginRef} hidden={locked} disabled={!p.playable} onClick={() => startJourney(p.id, "journey")}>
             {!p.playable ? `${p.title} is still being made` : st === "done" ? "Drive it again" : "Begin"}
           </button>
-          <button hidden={st !== "done" || !p.playable} onClick={() => startJourney(p.id, "wander")}>Wander here</button>
-          {allOpen && st === "done" && p.playable && (
-            <div className="opts" role="group" aria-label="Wander with">
-              {([["rover", "Rover"], ["mule", "Mule"], ["tortoise", "Tortoise"], ["bus", "The Loaf"], ["snowcat", "Snowcat"]] as const).map(([v, n]) => (
-                <button key={v} aria-pressed={wanderVehicle === (v === p.vehicle ? null : v)} onClick={() => useStore.setState({ wanderVehicle: v === p.vehicle ? null : v })}>{n}</button>
+          <button hidden={(st !== "done" && !UNLOCK_ALL) || !p.playable} onClick={() => startJourney(p.id, "wander")}>Wander here</button>
+          {p.playable && (
+            <div className="opts" role="group" aria-label="Drive with">
+              <span>Drive with</span>
+              {ROSTER.map((r) => (
+                <button key={r.id} aria-pressed={(wanderVehicle ?? p.vehicle) === r.id} onClick={() => useStore.setState({ wanderVehicle: r.id === p.vehicle ? null : r.id })}>{r.name}</button>
               ))}
             </div>
           )}

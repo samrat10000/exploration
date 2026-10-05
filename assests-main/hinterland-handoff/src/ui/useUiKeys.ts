@@ -24,6 +24,14 @@ export function useUiKeys() {
         else s.toggleHints();
         return;
       }
+      if (e.code === "KeyV" && !e.repeat && s.phase === "play" && !s.photo) {
+        live.camMode = (live.camMode + 1) % 6;
+        live.note.text = ["Behind the vehicle", "In the cab", "On the hood", "Rear view", "From above", "Far behind"][live.camMode]; live.note.t = 2; return;
+      }
+      if (e.code === "KeyL" && !e.repeat && s.phase === "play") {
+        live.lights = live.lights === "auto" ? "on" : live.lights === "on" ? "off" : "auto";
+        live.note.text = { auto: "Headlights: automatic", on: "Headlights on", off: "Headlights off" }[live.lights]; live.note.t = 2; return;
+      }
       if (e.code === "KeyM" && !e.repeat) { const on = audio.toggleMusic(); live.note.text = on ? "Music on" : "Music off"; live.note.t = 2; return; }
       if (e.code === "F9" && import.meta.env.DEV) { e.preventDefault(); s.devSwapVehicle(); return; }
       if ((e.code === "ArrowUp" || e.code === "ArrowDown") && s.phase !== "play") {

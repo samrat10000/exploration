@@ -91,9 +91,11 @@ export const live = {
   rounds: { on: false, carried: {} as Record<string, number>, delivered: [] as string[], doneAt: {} as Record<string, number>, prompt: "" as "" | "load" | "hand", hold: 0, note: "", noteT: 0,
     visit: null as null | { hut: string; name: string; keeper: string; line: string; given: string; received: string; stamp: string; emblem: string; colour: string; t: number } },
   /** the bus route (§1.14): what the bus HUD reads */
-  bus: { on: false, seats: [] as number[], next: "", then: [] as string[], line: "", lineT: 0, prompt: false, hold: 0 },
+  bus: { door: false, on: false, seats: [] as number[], next: "", then: [] as string[], line: "", lineT: 0, prompt: false, hold: 0 },
   /** make camp (§1.12): prompt + what the camp is doing */
-  camp: { forecast: false, prompt: false, hold: 0, lantern: false, cookT: 0, line: "", lineT: 0 },
+  camp: { forecast: false, prompt: false, hold: 0, lantern: false, cookT: 0, line: "", lineT: 0,
+    /** a fireworks show from camp (night only): dx/dz = direction from the van to the show; the camera frames both */
+    fw: null as null | { dx: number; dz: number }, fwDist: 11, fwMenu: false },
   /** grapple winch (§1.9) */
   winch: { aiming: false, target: -1, state: "idle" as "idle" | "flying" | "latched", anchor: -1, t: 0, length: 0, tension: 0, haul: null as null | { s: number; len: number; ax: number; ay: number; az: number } },
   /** dev panel (F3) overrides and readouts; only dev builds ever change these */
@@ -105,6 +107,10 @@ export const live = {
   fireworks: null as null | { launch(pos: { x: number; y: number; z: number }, height: number, type?: string): void; volley(pos: { x: number; y: number; z: number }, n?: number): void; show(origin: { x: number; y: number; z: number } | null, spread?: number, height?: number): void },
   /** 0..1: a meteor shower is on (SkyExtras sends a shooting star every ~0.3 s) */
   shower: 0,
+  /** camera view (V cycles): chase, cab, hood, rear mirror, high; headlights (L cycles): auto, on, off */
+  camMode: 0,
+  camEff: 0,
+  lights: "auto" as "auto" | "on" | "off",
   /** a discovery card is up: the music ducks */
   ducked: false,
   /** Lantern River: which shrines have their lantern, the one in reach, the hold ring */

@@ -1,5 +1,6 @@
 // Journey registry (JOURNEYS §1.1). A journey = one level: a region, a vehicle, a route whose
 // progress (0..1) drives time of day and weather, and an ending. J1 wraps the existing valley.
+import { UNLOCK_ALL } from "../vehicle/roster";
 import { START, START_YAW, VP } from "../world/height";
 import { kettleGround, progressOf, trailAt } from "../world/kettle/kettle";
 import { gorgeGround, gorgeProgress } from "../world/gorge/gorge";
@@ -223,6 +224,7 @@ export type AtlasState = "done" | "next" | "locked";
 /** Finished journeys are done; the first unfinished one is next; the rest stay beyond the ridge. */
 export function atlasState(id: JourneyId, done: JourneyId[]): AtlasState {
   if (done.includes(id)) return "done";
+  if (UNLOCK_ALL) return "next";
   const first = JOURNEYS.find((j) => !done.includes(j.id));
   return first?.id === id ? "next" : "locked";
 }

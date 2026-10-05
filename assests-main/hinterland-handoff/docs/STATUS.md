@@ -11,9 +11,22 @@ _The one handoff file. A fresh Claude Code on any machine: read CLAUDE.md §0–
 4. Windows shell: long Python/TS edits go in a scratch file (Write tool) and run with `python file.py` (heredocs break on quotes). Never touch git.
 
 ## How to work (cheap and good)
+- Players: README.md is the starter guide (run + controls). Garage uses flat 2D drawings (ui/VehicleArt.tsx), not 3D renders.
 - Loop: run `/loop` (no args). Each tick = ONE task from "Left to do", top first: read only the files it names, build, run it in the headless browser, look at 1–2 screenshots, update this file + TASKS.md, then `ScheduleWakeup` ~60 s with `<<autonomous-loop-dynamic>>`. Stop the loop when the list is empty.
 - Save tokens: MAP.md first; no reading reference/demos/; read each file once, patch many things in one script with `assert`ed replacements; one screenshot per feature; don't re-read after edits; keep replies terse.
 - Report in the CLAUDE.md DONE shape. Record anything fake/thin under "Not real yet". Journey ids: overlook, longway, boulder, lantern, hutrounds, islands, snow, firefly, skyroad, market, salt, coast, light, above, flowers.
+
+## Time of day
+Settings (title or pause) → Comfort → Time of day: Auto / Dawn / Day / Golden hour / Night (settings.timeLock, applied in Sky.tsx; beats a journey's route light and the wander clock). Auto = journey route light, or in Wander a slow morning → golden warm-up that never reaches night.
+
+## Camera + lights keys
+V cycles 6 views (last = far behind: chase pulled back 17 m+ and up; the cinematic auto-camera was dropped) (live.camMode): behind · in the cab · on the hood · rear view · from above (cab/rear hide the vehicle body, wheels stay). L cycles headlights auto/on/off (live.lights; ground vehicles). Keys in ui/useUiKeys.ts, camera in camera/CameraRig.tsx. Light rays/aurora/thermals were softened; night sky lanterns added.
+
+## Camp fireworks (trailer shot)
+Tortoise camp menu → Fireworks (F, night only; day says to wait or set Night). Show is placed 66 m out in the direction with the lowest skyline (CampMenu openest()), lantern lights, the menu steps aside (Enter/arrow brings it back, F again stops). CameraRig frames van (lower left) + show; drag swings, wheel dollies 6–26 m, FOV 60. Stops on pack up / Esc / sunrise. Murmuration flocks roost at night unless flying. Crickets kept; fireworks crackle-shell pops removed (read as a hiss). V views also work at camp (camMode 0 = camp/fireworks shot). Photo from camp keeps the camp up; photo Time nudge beats the Settings time lock. Tortoise: windscreen flush, prayer flags on both rails on poles, scarf knotted at the ladder top. Drag/wheel not tested headless.
+
+## Unlock-all is ON (testing)
+`UNLOCK_ALL = true` in src/game/vehicle/roster.ts: every journey, vehicle, paint, tyre, rack, charm and horn is open. The Garage lists all 8 vehicles as pictures of their real 3D models (ui/vehiclePreview.ts); the pick (store.wanderVehicle) is used for Begin AND Wander on any journey (Atlas "Drive with" row). Sky Mule/glider start in the air; the boat starts at the region's first slipway (no slipway → Rover). Set UNLOCK_ALL = false to go back to earning things.
 
 ## Done (all ✅ in docs/TASKS.md)
 Finale unlock: after J14 the Atlas offers any ground vehicle for "Wander here" (extra.allOpen → store.wanderVehicle; boat/flight vehicles still start from their slipways/ridges). Phases 1–2 (stack, Rapier vehicles, Journeys + Atlas, Mule, Kettle Peak) · 3.0 dev panel F3 · 3.1–3.4 models, placement, grass, lighting/post · 3.6 photo mode · 3.9–3.15 weather, dirt, seeds, horn, clouds/sky, fireworks, music · 4.1 travelers, 4.3 settings · 5.1–5.9 flight, glider, bus, boat, Tortoise, Snowcat, winch, birds/storms, Hut Rounds · 6.3–6.15 journeys 3–15 (each region in src/game/world/<name>/), all playable start → ending.
@@ -25,15 +38,16 @@ Small (≈ one tick each)
 Medium (a few ticks)
 3. Ground feel leftovers: potholes + puddles on paths, snow-rut heightmap (the camera bump is covered by the existing landing/jolt shake). Surface sounds (splash, mud squelch, snow crunch, stone rumble) are in by code, never heard.
 4. Weather leftovers: Kettle's own progress-driven snow merged with the weather system. Done: rain ripples on ground/water, wet + snow on grass tips, rocks and all baked props (houses, walls) via patchGround.
-5. World kit leftovers: sky lanterns rising at night, a shared particle pool; Sky Road parcels + valley village with fireworks. Done: balloons (3 valley, 7 Sky Road) and dragons (jade circles the cloud sea, ember by the hut: props/dragon.ts + world/Dragons.tsx; no discovery card or fly-alongside yet).
-6. Flight polish: ¾ front unfold camera, touch flight controls, bus door folding + rider animation. [5.x]
+5. World kit leftovers: a shared particle pool; Sky Road parcels + valley village with fireworks. Done: sky lanterns at night (environment/SkyLanterns.tsx, every region), balloons (3 valley, 7 Sky Road) and dragons (jade circles the cloud sea, ember by the hut: props/dragon.ts + world/Dragons.tsx; no discovery card or fly-alongside yet).
+6. Flight polish leftovers: ¾ front unfold camera; bus riders animated walking on/off. Done: touch flight (the action button also unfolds/folds wings and floats the boat), bus door folds shut against its hinge while the doors are open (door seen only from behind in the test).
 7. Lighting: god rays at golden hour, MSAA on real GPUs, review golden-hour Kettle / hut-at-dusk views against ART §1; pine LOD. [3.4]
-8. Garage roster as 3D turntables with dolly; explicit music cue moments (4.4) if "silence by default" is wanted (see note below).
+8. Garage roster dolly/turntable animation (pictures are static now); explicit music cue moments (4.4) if "silence by default" is wanted (see note below).
 Large (many ticks)
 9. Own regions for J5 Hut Rounds (high meadow ridge) and J10 Market Day (7 distinct villages, stone bridges, level-crossing train, fair scene).
 10. J14 finale over the whole world (all regions) + credits with people/music.
 11. Art pass on thin journeys (gorge walls, salt, coast surf, Firefly observatory, lake islands) to the ART §1 "wallpaper" bar.
 12. Phase 7: 7.0 small-touches backlog (WEATHER.md §5), 7.1 journeys 16–19 + Dragon Festival (design desk sends docs), 7.2 build-your-own-vehicle Garage.
+Note: with a non-native vehicle a journey's own mechanics may not fit (winch is Rover-only, lanterns/post need the boat, flight beats need wings): that is expected while testing.
 Open decision: music is ON by default (task 3.15) but CLAUDE.md 4.4 says silence by default. M toggles; ask the user before changing.
 
 ## Not real yet (honest list)

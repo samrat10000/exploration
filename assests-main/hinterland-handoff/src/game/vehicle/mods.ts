@@ -2,6 +2,7 @@
 // Tyres change grip and top speed; the horn changes pitch. Saved per vehicle in extra.mods.
 import { useStore } from "../../state/store";
 import { live } from "../../state/live";
+import { UNLOCK_ALL } from "./roster";
 
 export interface TyreSet { name: string; line: string; grip: number; speed: number; need?: string }
 export const TYRES: Record<string, TyreSet> = {
@@ -32,7 +33,7 @@ export interface Mods { tyres: string; horn: string; rack: string; charm: string
 const DEFAULT: Mods = { tyres: "allterrain", horn: "low", rack: "plain", charm: "none" };
 
 export const modsOf = (veh: string): Mods => ({ ...DEFAULT, ...((useStore.getState().extra.mods as Record<string, Partial<Mods>> | undefined)?.[veh] ?? {}) });
-export const earned = (need: string | undefined) => !need || (useStore.getState().done as string[]).includes(need);
+export const earned = (need: string | undefined) => UNLOCK_ALL || !need || (useStore.getState().done as string[]).includes(need);
 
 /** What the current vehicle's tyres do to handling; the controller multiplies grip and top speed by these. */
 export function handling() {

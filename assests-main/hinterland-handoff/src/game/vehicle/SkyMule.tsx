@@ -52,7 +52,12 @@ export function SkyMule({ kind = "skymule" }: { kind?: FlierKind }) {
     live.vehicle = kind;
     live.flight.on = true;
     live.cam.dist = 12.5; live.cam.height = 4.1; live.cam.posK = 3; live.cam.yawK = 1.8;
-    live.teleport = (x, z, yaw) => { const s = st.current; s.f = newFlight(x, groundHeight(x, z) + 0.05, z, yaw, 0); s.f.onGround = true; s.phase = "landed"; s.t = 0; };
+    live.teleport = (x, z, yaw) => {
+      const s = st.current;
+      // a journey started with the winged vehicle begins in the air; a dev teleport lands it
+      if (live.flight.start === "air" && useStore.getState().phase !== "play") { s.f = newFlight(x, groundHeight(x, z) + 60, z, yaw, 17); if (glider) s.f.puffs = s.f.maxPuffs = 0; s.phase = "fly"; s.t = UNFOLD; return; }
+      s.f = newFlight(x, groundHeight(x, z) + 0.05, z, yaw, 0); s.f.onGround = true; s.phase = "landed"; s.t = 0;
+    };
     return () => { detach(); clearDriveInput(); live.flight.on = false; live.flight.prompt = ""; live.teleport = null; useStore.setState({ cinema: false }); };
   }, []);
 

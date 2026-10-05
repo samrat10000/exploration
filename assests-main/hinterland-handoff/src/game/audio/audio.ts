@@ -197,17 +197,6 @@ export const audio = {
     gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(0.32 * level / (1 + delay * 0.8), t + 0.01); gain.gain.setTargetAtTime(0, t + 0.04, 0.22);
     src.connect(f); f.connect(gain); gain.connect(g.amb); src.stop(t + 1.6);
   },
-  /** crackle: n tiny pops spread over ~1 s */
-  crackle(delay: number, n: number) {
-    if (!g) return;
-    const c = g.ctx;
-    for (let i = 0; i < n; i++) {
-      const t = c.currentTime + Math.min(delay, 5) + Math.random() * 1.0, src = c.createBufferSource(), f = c.createBiquadFilter(), gain = c.createGain();
-      src.buffer = g.noiseBuf; src.start(0, Math.random() * 2); f.type = "highpass"; f.frequency.value = 2200;
-      gain.gain.setValueAtTime(0.05 / (1 + delay * 0.5), t); gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-      src.connect(f); f.connect(gain); gain.connect(g.amb); src.stop(t + 0.07);
-    }
-  },
   /** a rocket's rising whistle */
   launch(delay: number) {
     if (!g) return;
@@ -315,9 +304,6 @@ export const audio = {
     const valley = live.region === "valley";
     const dPool = valley ? Math.hypot(car.x - POOL.x, car.z - POOL.z) : 999;
     const dRiver = valley && car.z > -84 ? Math.abs(car.x - riverX(car.z)) : 999;
-    // crickets after dusk (not in cloud, snow, rain or wind): quietest near the dawn
-    const night = live.env.stars * (1 - Math.min(1, live.wx.rain + live.wx.snow)) * (1 - alt) * (1 - live.muffle);
-    g.cricketG.gain.setTargetAtTime(0.5 * night * 0.06, t, 1.5);
     // surf where the sea or a lake is near: swells with the wave, stronger on the cliffs and coast
     const sea = ["coast", "light", "lake"].includes(live.region);
     let shore = 0;
@@ -328,6 +314,9 @@ export const audio = {
     if (t > g.nextBird) { if (car.y < 45 && live.muffle < 0.3) chirp(g); g.nextBird = t + 2 + Math.random() * 6; }
     // inside cloud everything goes soft
     g.ambLP.frequency.setTargetAtTime(18000 - live.muffle * 17100, t, 0.6);
+    // crickets after dusk (not in cloud, snow, rain or wind): quietest near the dawn
+    const night = live.env.stars * (1 - Math.min(1, live.wx.rain + live.wx.snow)) * (1 - alt) * (1 - live.muffle);
+    g.cricketG.gain.setTargetAtTime(0.5 * night * 0.06, t, 1.5);
     // a campfire close by crackles, louder when you sit
     const crackle = live.fireNear * (0.5 + Math.random() * Math.random() * 2.5) * 0.05;
     g.fireG.gain.setTargetAtTime(crackle, t, 0.03);

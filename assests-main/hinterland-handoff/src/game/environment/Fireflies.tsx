@@ -22,7 +22,7 @@ export function Fireflies() {
       vertexShader: /* glsl */ `attribute float aSeed; uniform float uTime; varying float vB; void main(){
         vec3 p = position; p.x += sin(uTime*0.4 + aSeed)*1.6; p.y += sin(uTime*0.7 + aSeed*1.7)*0.6; p.z += cos(uTime*0.35 + aSeed*0.6)*1.6;
         vB = pow(0.5 + 0.5*sin(uTime*(1.5 + fract(aSeed)*2.0) + aSeed*7.0), 3.0);
-        vec4 mv = modelViewMatrix*vec4(p, 1.0); gl_PointSize = (2.0 + vB*5.0)*260.0/max(1.0, -mv.z); gl_Position = projectionMatrix*mv; }`,
+        vec4 mv = modelViewMatrix*vec4(p, 1.0); gl_PointSize = min(16.0, (2.0 + vB*5.0)*260.0/max(1.0, -mv.z)); gl_Position = projectionMatrix*mv; }`,
       fragmentShader: /* glsl */ `uniform float uOn; varying float vB; void main(){ float d = length(gl_PointCoord - 0.5); gl_FragColor = vec4(vec3(0.85, 1.0, 0.45), uOn*vB*smoothstep(0.5, 0.0, d)); }`,
     });
     const pts = new Points(g, mat); pts.frustumCulled = false;

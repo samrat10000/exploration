@@ -32,11 +32,11 @@ export function SkyExtras() {
       vertexShader: "varying vec2 vUv; uniform float uTime; void main(){ vUv = uv; vec3 p = position; p.z += sin(uv.x*9.0 + uTime*0.15)*60.0 + sin(uv.x*23.0 - uTime*0.1)*20.0; gl_Position = projectionMatrix*modelViewMatrix*vec4(p, 1.0); }",
       fragmentShader: `varying vec2 vUv; uniform float uTime, uO;
         void main(){ float x = vUv.x, v = vUv.y;
-          float rays = 0.55 + 0.45*sin(x*220.0 + sin(x*31.0 + uTime*0.6)*4.0 + uTime*0.9);
+          float rays = 0.82 + 0.18*sin(x*70.0 + sin(x*13.0 + uTime*0.3)*3.0 + uTime*0.4); // soft folds, not hard stripes
           float body = smoothstep(0.0, 0.18, v)*smoothstep(1.0, 0.3, v)*(0.6 + 0.4*sin(x*7.0 + uTime*0.2));
           float edge = smoothstep(0.0, 0.08, x)*smoothstep(1.0, 0.92, x);
           vec3 col = mix(vec3(0.2, 1.0, 0.6), vec3(0.65, 0.4, 1.0), smoothstep(0.35, 1.0, v));
-          gl_FragColor = vec4(col*body*rays*edge*uO*0.5, 1.0); }`,
+          gl_FragColor = vec4(col*body*rays*edge*uO*0.4, 1.0); }`,
     });
     const curtains = [0, 1, 2].map((i) => { const m = new Mesh(new PlaneGeometry(1500, 300, 80, 1), aurora); m.frustumCulled = false; m.userData = { a: -0.4 + i * 0.5, h: 420 + i * 60 }; return m; });
     const c = document.createElement("canvas"); c.width = 256; c.height = 8;
@@ -60,10 +60,10 @@ export function SkyExtras() {
     const env = live.env, day = 1 - env.stars, night = env.stars, low = 1 - Math.min(1, Math.asin(Math.min(1, Math.max(-1, env.sunDir.y))) / 0.6);
     const cp = camera.position, dark = live.wx.dark;
     const sp = new Vector3().copy(cp).addScaledVector(env.sunDir, R * 0.9);
-    k.rays.position.copy(sp); k.rays2.position.copy(sp); k.rays.scale.setScalar(R * 0.55); k.rays2.scale.setScalar(R * 0.38);
+    k.rays.position.copy(sp); k.rays2.position.copy(sp); k.rays.scale.setScalar(R * 0.8); k.rays2.scale.setScalar(R * 0.55);
     k.rays.material.rotation += dt * 0.006; k.rays2.material.rotation -= dt * 0.009;
     // strongest at dawn and golden hour, gone at night and under cloud
-    const ro = day * (0.15 + 0.5 * low) * (1 - dark) * (1 - live.wx.rain);
+    const ro = day * (0.1 + 0.3 * low) * (1 - dark) * (1 - live.wx.rain) * 0.7;
     k.rays.material.opacity = ro * 0.45; k.rays2.material.opacity = ro * 0.3;
     k.rays.material.color.copy(env.sunC); k.rays2.material.color.copy(env.sunC);
     // aurora on clear nights

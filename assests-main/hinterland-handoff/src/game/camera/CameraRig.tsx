@@ -95,11 +95,14 @@ export function CameraRig() {
       look.idle = 0;
     };
     const end = () => { look.drag = false; };
+    const wheel = (e: WheelEvent) => { if (live.camp.fw) live.camp.fwDist = clamp(live.camp.fwDist + e.deltaY * 0.01, 6, 26); };
+    el.addEventListener("wheel", wheel, { passive: true });
     el.addEventListener("pointerdown", down);
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerup", end);
     el.addEventListener("pointercancel", end);
     return () => {
+      el.removeEventListener("wheel", wheel);
       el.removeEventListener("pointerdown", down);
       el.removeEventListener("pointermove", move);
       el.removeEventListener("pointerup", end);
@@ -111,7 +114,7 @@ export function CameraRig() {
     const s = useStore.getState(), phase = s.phase, calm = s.settings.motion === "calm", car = live.car;
 
     if (phase === "play" || phase === "paused" || phase === "ending") {
-      if (!look.drag) { look.idle += dt; if (look.idle > 1.6) look.orbit *= Math.exp(-1.6 * dt); }
+      if (!look.drag && !live.camp.fw) { look.idle += dt; if (look.idle > 1.6) look.orbit *= Math.exp(-1.6 * dt); }
       if (Math.abs(car.speed) > 0.5 || car.air) camYaw.current = angleLerp(camYaw.current, car.yaw, damp(live.cam.yawK, dt));
       if (s.photo) {
         // photo mode: free orbit + dolly around the vehicle, never under the ground
@@ -121,7 +124,15 @@ export function CameraRig() {
         camLook.set(car.x, car.y + 1.2, car.z);
         smPos.lerp(camPos, damp(10, dt));
         smLook.lerp(camLook, damp(12, dt));
-      } else if (live.sit) {
+      } else if (live.sit && live.camp.fw && live.camMode === 0) {
+        // fireworks from camp: behind the van and a little to one side, looking past it up into the show; drag swings around, scroll dollies
+        const f = live.camp.fw, D = live.camp.fwDist, a = Math.atan2(f.dx, f.dz) + Math.PI + 0.5 + look.orbit + Math.sin(live.clock * 0.05) * 0.06;
+        camPos.set(car.x + Math.sin(a) * D, 0, car.z + Math.cos(a) * D);
+        camPos.y = Math.max(car.y + 1.5 + D * 0.06, height(camPos.x, camPos.z) + 1.2);
+        camLook.set(car.x + f.dx * 40, car.y + 8.5 + D * 0.3, car.z + f.dz * 40);
+        smPos.lerp(camPos, damp(0.9, dt));
+        smLook.lerp(camLook, damp(1.1, dt));
+      } else if (live.sit && live.camMode === 0) {
         // sitting at a fire: a slow orbit, the fire in the middle of the frame
         const a = live.clock * 0.07, sit = live.sit;
         camPos.set(sit.x + Math.cos(a) * 7.5, 0, sit.z + Math.sin(a) * 7.5);
@@ -140,8 +151,17 @@ export function CameraRig() {
           _n.set(m.x, m.y, m.z).sub(camPos).normalize();
           camLook.copy(camPos).addScaledVector(_m.lerp(_n, k).normalize(), 20);
         }
-        smPos.lerp(camPos, damp(live.cam.posK, dt));
-        smLook.lerp(camLook, damp(m ? 3 : 7, dt));
+        // other viewpoints (V): cab (the driver's eyes), hood (low at the front), rear mirror (looking back), high (above and behind)
+        // 5 = far behind: the same chase, pulled well back and up so the road ahead and the whole vehicle sit in frame
+        const cm = live.camEff = live.camMode, yv = car.yaw + look.orbit * (cm === 3 ? -1 : 1), fx = -Math.sin(yv), fz = -Math.cos(yv);
+        if (cm === 1) { camPos.set(car.x - fx * 0.15, car.y + 1.55, car.z - fz * 0.15); camLook.set(car.x + fx * 20, car.y + 1.5, car.z + fz * 20); }
+        else if (cm === 2) { camPos.set(car.x + fx * 2.3, car.y + 0.95, car.z + fz * 2.3); camLook.set(car.x + fx * 30, car.y + 0.9, car.z + fz * 30); }
+        else if (cm === 3) { camPos.set(car.x - fx * 0.3, car.y + 1.7, car.z - fz * 0.3); camLook.set(car.x - fx * 20, car.y + 1.5, car.z - fz * 20); }
+        else if (cm === 4) { camPos.set(car.x - fx * 9, car.y + 24, car.z - fz * 9); camLook.set(car.x + fx * 6, car.y, car.z + fz * 6); }
+        else if (cm === 5) { const sp = Math.abs(car.speed ?? 0); camPos.set(car.x - fx * (17 + sp * 0.25), car.y + 6.5 + sp * 0.06, car.z - fz * (17 + sp * 0.25)); camLook.set(car.x + fx * 8, car.y + 1.2, car.z + fz * 8); }
+        const tight = (cm === 1 || cm === 2 || cm === 3);
+        smPos.lerp(camPos, damp(cm === 5 ? 3.5 : tight ? 40 : cm === 4 ? 3 : live.cam.posK, dt));
+        smLook.lerp(camLook, damp(cm === 5 ? 5 : tight ? 40 : m ? 3 : 7, dt));
       }
     } else if (phase === "intro" || phase === "outro") {
       const tr = live.trans;
@@ -171,7 +191,7 @@ export function CameraRig() {
     camera.lookAt(smLook);
     placeLabel(camera as PerspectiveCamera);
     const cam = camera as PerspectiveCamera;
-    const targetFov = s.photo ? LENSES[live.photo.lens][1] : phase === "play" && !calm ? 55 + Math.min(1, Math.abs(car.speed) / 21) * 7 : 55;
+    const targetFov = s.photo ? LENSES[live.photo.lens][1] : live.camp.fw ? 60 : phase === "play" && !calm ? 55 + Math.min(1, Math.abs(car.speed) / 21) * 7 : 55;
     if (Math.abs(cam.fov - targetFov) > 0.01) {
       cam.fov += (targetFov - cam.fov) * damp(3, dt);
       cam.updateProjectionMatrix();

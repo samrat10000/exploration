@@ -34,8 +34,8 @@ export function buildTortoise() {
   add(g, new TorusGeometry(.17, .03, 8, 20), brass, [W/2 + .148, 1.48, .1], [0, Math.PI/2, 0]);
   add(g, box(.05, .03, .14), chrome, [W/2 + .16, 1.12, -.18]);
   add(g, box(.42, .05, .7), M("#8E908C", .4, .6), [W/2 + .32, .42, .1]);
-  // windscreen + wiper + mirrors
-  const ws = new Group(); ws.position.set(0, 1.45, -1.83); ws.rotation.x = -.5; g.add(ws);
+  // windscreen + wiper + mirrors: flush on the front curve, leaning back with it (about 0.55 rad at y 1.45)
+  const ws = new Group(); ws.position.set(0, 1.45, -1.735); ws.rotation.x = .55; g.add(ws);
   add(ws, new PlaneGeometry(W - .2, .5), M("#24343A", .1, .3), null, [0, Math.PI, 0]);
   add(ws, new PlaneGeometry(W - .2, .5), glassM, [0, 0, -.006], [0, Math.PI, 0]).castShadow = false;
   add(ws, box(.55, .015, .015), trim, [.15, -.18, -.02], [0, 0, .4]);

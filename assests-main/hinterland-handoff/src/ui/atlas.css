@@ -106,3 +106,4 @@
 #atlas .mods dd small{display:block;margin-top:5px;font-size:12px;font-weight:300;color:var(--aink-dim)}
 #atlas .vpick{flex-wrap:wrap}
 #atlas .nav .opts{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;width:100%}#atlas .nav .opts button{font-size:14px;color:var(--aink-faint);border-bottom:1px solid transparent;padding:2px 0}#atlas .nav .opts button[aria-pressed="true"]{color:var(--aink);border-bottom-color:var(--asun)}
+#atlas .stage .pic{display:grid;place-items:center;min-height:240px}#atlas .stage .pic img{max-width:100%;height:auto;filter:drop-shadow(0 14px 18px rgba(40,30,10,.25))}

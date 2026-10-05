@@ -45,7 +45,8 @@ export function readInput() {
   input.brake = k("Space") || touch.brake;
   // tap mode: one press of E / T carries the whole ring (2.2 s) instead of being held
   const tap = useStore.getState().settings.holdMode === "tap", now = performance.now();
-  const e = k("KeyE") || touch.action, w = k("KeyT");
+  // on a phone the one action button also unfolds / folds the wings and floats the boat (their prompts use T on a keyboard)
+  const e = k("KeyE") || touch.action, w = k("KeyT") || (touch.action && !!live.flight.prompt);
   if (tap) { if (e && !prevE) latchE = now + 2200; if (w && !prevT) latchT = now + 1500; }
   prevE = e; prevT = w;
   input.action = tap ? now < latchE : e;

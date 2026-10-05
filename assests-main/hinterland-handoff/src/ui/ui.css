@@ -165,6 +165,7 @@ body.dev-hide-ui #root > :not(:has(canvas)){visibility:hidden!important}
 #camp .down{left:50%;bottom:0;transform:translateX(-50%)}
 #camp .left{left:0;top:50%;transform:translateY(-50%)}
 #camp .right{right:0;top:50%;transform:translateY(-50%)}
+#camp .mid{left:50%;top:calc(50% + 46px);transform:translateX(-50%);font-size:15px}#camp .mid kbd{font-size:11px;opacity:.6}#camp .opt:disabled{opacity:.45;cursor:default}
 #campline{position:fixed;left:50%;bottom:16vh;transform:translateX(-50%);margin:0;font-weight:300;font-size:15px;color:var(--ink);text-shadow:0 1px 10px rgba(0,0,0,.55);opacity:0;transition:opacity .8s var(--ease);pointer-events:none;z-index:4}
 #campline.on{opacity:1}
 

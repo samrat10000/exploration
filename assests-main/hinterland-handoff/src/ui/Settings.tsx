@@ -51,6 +51,7 @@ export function Settings() {
         <Slider label="Camera sensitivity" k="camSens" min={50} max={150} unit="%" />
       </Col>
       <Col title="Comfort">
+        <Seg label="Time of day" hint="Auto follows the journey. Pick one to hold the light there." value={settings.timeLock} opts={[["auto", "Auto"], ["dawn", "Dawn"], ["day", "Day"], ["golden", "Golden hour"], ["night", "Night"]]} set={(v) => setSettings({ timeLock: v })} />
         <Seg label="Camera motion" hint="Calm removes camera shake and speed zoom." value={settings.motion} opts={[["full", "Full"], ["calm", "Calm"]]} set={(v) => setSettings({ motion: v })} />
         <Seg label="Text size" value={settings.textSize} opts={[["s", "S"], ["m", "M"], ["l", "L"]]} set={(v) => setSettings({ textSize: v })} />
         <Seg label="Traveler lines" value={settings.travelerLines} opts={[[true, "On"], [false, "Off"]]} set={(v) => setSettings({ travelerLines: v })} />

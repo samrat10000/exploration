@@ -53,7 +53,7 @@ export function Tortoise() {
   const body = useVehicle(m.parts, TORTOISE);
   const start = useMemo(spawnPose, []);
   const st = useRef({ t: 0, open: false, hold: 0 }).current;
-  useEffect(() => () => { live.camp.prompt = false; if (useStore.getState().camping) useStore.setState({ camping: false, sitting: false }); }, []);
+  useEffect(() => () => { live.camp.prompt = false; if (live.camp.fw) { live.fireworks?.show(null); live.camp.fw = null; } if (useStore.getState().camping) useStore.setState({ camping: false, sitting: false }); }, []);
 
   useFrame((_, dt) => {
     const s = useStore.getState(), car = live.car, c = live.camp;
@@ -74,6 +74,7 @@ export function Tortoise() {
     }
     // Esc (or "Pack up") gets you up: fold the camp away
     if (st.open && !s.sitting) { st.open = false; useStore.setState({ camping: false }); live.sit = null; c.lantern = false; }
+    if (c.fw && (!st.open || live.env.stars < 0.3)) { live.fireworks?.show(null); c.fw = null; }
     st.t = clamp(st.t + (st.open ? dt : -dt) / POP, 0, 1);
     const e = st.t * st.t * (3 - 2 * st.t);
     m.camp.visible = e > 0.01; m.camp.scale.set(Math.max(0.001, e), Math.max(0.001, e), 1);
@@ -94,7 +95,6 @@ export function Tortoise() {
       mat.opacity = c.cookT > 0 ? 0.35 * (1 - ph) : 0;
     });
     c.lineT = Math.max(0, c.lineT - dt);
-    live.fireNear = c.lantern && st.open ? 0.6 : live.fireNear;
   });
 
   return (

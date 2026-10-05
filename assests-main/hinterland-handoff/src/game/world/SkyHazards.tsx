@@ -67,6 +67,9 @@ export function SkyHazards() {
     let hit = false;
     for (const k of flocks) {
       const { f, L, R, b } = k;
+      // birds roost after dark unless you are up there flying among them
+      L.visible = R.visible = live.flight.on || live.env.stars < 0.5;
+      if (!L.visible) continue;
       for (let i = 0; i < b.length; i++) {
         const u = b[i], a = clock * u.sp * 0.5 + u.ph, wob = Math.sin(clock * 0.3 + i * 0.01) * 4;
         u.x = f.x + Math.cos(a) * (u.rad + wob) + u.sx; u.y = f.y + u.h + Math.sin(a * 2.3) * 2 + u.sy; u.z = f.z + Math.sin(a) * (u.rad + wob) + u.sz;

@@ -328,6 +328,8 @@ export function useVehicle(parts: VehicleParts, spec: VehicleSpec, onStep?: (s: 
   // visuals + live state, after physics has interpolated the body (priority -40 > physics -50)
   useFrame((_, dt) => {
     decor();
+    // looking out from inside (cab / rear view) the body would only block the view: hide it, the wheels stay
+    parts.body.visible = !(live.camEff === 1 || live.camEff === 3);
     const holder = parts.root.parent;
     if (!holder) return;
     const p = holder.position, c = live.car;

@@ -1,4 +1,5 @@
 // Game + UI state shared between the DOM HUD and the canvas.
+import { SLIPWAYS } from "../game/world/Slipways";
 import { gorgeGround, gorgeSafePoint } from "../game/world/gorge/gorge";
 import { riverGround, riverSafePoint } from "../game/world/river/river";
 import { forestGround, forestSafePoint } from "../game/world/forest/forest";
@@ -33,6 +34,8 @@ export interface Settings {
   eng: number;
   /** generative soundtrack volume */
   music: number;
+  /** the player's own time of day (beats a journey's route light); auto follows the journey / wander clock */
+  timeLock: "auto" | "dawn" | "day" | "golden" | "night";
   /** travelers speak when you stop beside them */
   travelerLines: boolean;
   textSize: "s" | "m" | "l";
@@ -165,7 +168,7 @@ else if (s0.session?.region === "flowers") { setGround(flowersGround); live.safe
 export const useStore = create<Store>((set, get) => ({
   phase: "loading",
   settings: {
-    quality: isTouch ? "medium" : "high", master: 80, amb: 80, eng: 60, music: 70, travelerLines: true, textSize: "m", resScale: 100, fpsCap: "off", invertPitch: false, camSens: 100, holdMode: "hold", contrast: false, motion: prefersCalm ? "calm" : "full",
+    quality: isTouch ? "medium" : "high", master: 80, amb: 80, eng: 60, music: 70, timeLock: "auto", travelerLines: true, textSize: "m", resScale: 100, fpsCap: "off", invertPitch: false, camSens: 100, holdMode: "hold", contrast: false, motion: prefersCalm ? "calm" : "full",
     ...(storage.get<Partial<Settings>>(SET_KEY) ?? {}),
   },
   save: initial,
@@ -234,12 +237,17 @@ export const useStore = create<Store>((set, get) => ({
     audio.init(get().settings);
     const j = journey(id), sess = get().save?.session, region = j.region ?? "valley";
     const useSave = resume && sess && sess.journey === id;
-    const start = j.start ?? { x: 0, z: 0, yaw: 0 };
+    const start = { ...(j.start ?? { x: 0, z: 0, yaw: 0 }) };
     const target = useSave ? { x: sess.x, z: sess.z, yaw: sess.yaw } : start;
     const progress = useSave ? sess.progress : mode === "journey" ? 0 : 1;
     // a journey starts at its own morning; wander keeps whatever light you left
     live.env.todTarget = useSave ? clamp(sess.tod ?? j.tod.from, 0, 5) : mode === "journey" ? j.tod.from : j.tod.to;
-    const veh: VehicleId = mode === "wander" && get().wanderVehicle && region !== "gorge" ? get().wanderVehicle! : j.vehicle;
+    let veh: VehicleId = get().wanderVehicle ?? j.vehicle;
+    // the boat only floats where there is a slipway: it starts there, and elsewhere you get the Rover
+    const slip = SLIPWAYS[region][0];
+    if (veh === "boat" && j.vehicle !== "boat") { if (slip) start.x = slip.x, start.z = slip.z, start.yaw = slip.yaw; else veh = "rover"; }
+    live.fireNear = 0; // no campfire crackle carried over from the last place
+    live.flight.start = veh === "skymule" || veh === "glider" ? "air" : "launch";
     const s = get(), swap = region !== s.region || veh !== s.vehicle;
     // a fresh run up the mountain starts with no lanterns lit and no crates left behind
     if (id === "longway" && mode === "journey" && !useSave) set({ extra: { ...get().extra, kettleLanterns: 0, kettleLoose: [] } });

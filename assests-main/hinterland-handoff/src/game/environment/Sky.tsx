@@ -13,6 +13,7 @@ import { fogAt, journey } from "../journeys/journeys";
 
 /** smoothed weather values, shared with anything that wants to react to fog */
 export const weather = { fog: 1 };
+export const TIME_LOCK = { dawn: 0.15, day: 2, golden: 3, night: 5 };
 const GREY = new Color();
 const STARS = { value: 0 };
 
@@ -97,7 +98,10 @@ export function Sky() {
       env.tod += (TOD.menu + 0.08 * Math.sin(clock * 0.02) - env.tod) * damp(0.5, dt);
     } else if (phase === "play" || phase === "intro" || phase === "ending") {
       if (phase === "play" && st.mode === "wander") env.todTarget = Math.min(TOD.playMax, env.todTarget + dt / TOD.warmSeconds);
-      env.tod += (env.todTarget - env.tod) * damp(0.6, dt);
+      // the player's own choice (Settings -> Time of day) beats a journey's route light and the wander clock
+      const lock = st.settings.timeLock;
+      if (lock !== "auto" && !st.photo) env.todTarget = TIME_LOCK[lock];
+      env.tod += (env.todTarget - env.tod) * damp(lock !== "auto" ? 0.9 : 0.6, dt);
     }
     if (live.dev.tod !== null) env.tod = env.todTarget = live.dev.tod;
     applyTimeOfDay(env.tod);

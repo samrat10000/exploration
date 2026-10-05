@@ -10,6 +10,7 @@ import { clamp, hash } from "../../utils/noise";
 import { C, M, VC, add, bakeStatic, cyl, h3, mixC, paintFaces } from "../art/kit";
 import { glowTexture } from "../environment/textures";
 import { U } from "../shaders";
+const DAY = { value: 1 };
 import { SKY, type Launch, type Landing, type Thermal } from "../vehicle/flight";
 import { input } from "../vehicle/input";
 import { height } from "./height";
@@ -57,14 +58,19 @@ function LaunchRidge({ l }: { l: Launch }) {
 
 /** A column of shimmering air with seeds drifting up it. */
 function ThermalColumn({ t }: { t: Thermal }) {
+  useFrame(() => { DAY.value = 1 - live.env.stars; });
   const { col, seeds } = useMemo(() => {
     const base = height(t.x, t.z), h = t.top - base;
-    const col = new Mesh(new CylinderGeometry(t.r * 0.55, t.r * 0.8, h, 24, 1, true), new ShaderMaterial({
+    const col = new Mesh(new CylinderGeometry(t.r * 0.9, t.r * 1.5, h, 32, 1, true), new ShaderMaterial({
       transparent: true, depthWrite: false, side: DoubleSide, blending: AdditiveBlending, fog: false,
-      uniforms: { uTime: U.uTime },
-      vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-      fragmentShader: /* glsl */ `varying vec2 vUv; uniform float uTime;
-        void main(){ float w = sin(vUv.y*40.0 - uTime*2.0 + vUv.x*30.0)*0.5 + 0.5; float a = w*0.035*smoothstep(0.0, 0.15, vUv.y)*(1.0 - smoothstep(0.7, 1.0, vUv.y));
+      uniforms: { uTime: U.uTime, uDay: DAY },
+      vertexShader: /* glsl */ `varying vec2 vUv; varying vec3 vN, vV; void main(){ vUv = uv; vec4 mv = modelViewMatrix*vec4(position,1.0); vN = normalize(normalMatrix*normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix*mv; }`,
+      fragmentShader: /* glsl */ `varying vec2 vUv; varying vec3 vN, vV; uniform float uTime, uDay;
+        void main(){
+          // a soft haze, not a tube: the sides melt away (view-angle fade), slow billows instead of stripes, and it is gone at night
+          float edge = pow(abs(dot(normalize(vN), normalize(vV))), 1.6);
+          float w = 0.55 + 0.45*sin(vUv.y*7.0 - uTime*0.6 + sin(vUv.x*5.0)*2.0);
+          float a = w*0.03*edge*uDay*smoothstep(0.0, 0.35, vUv.y)*(1.0 - smoothstep(0.45, 1.0, vUv.y));
           gl_FragColor = vec4(vec3(1.0, 0.97, 0.88), a); }`,
     }));
     col.position.set(t.x, base + h / 2, t.z);

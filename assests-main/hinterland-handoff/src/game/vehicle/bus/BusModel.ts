@@ -37,7 +37,9 @@ export function buildBus() {
     add(g, box(.03, .06, 5.9), trim, [sx*(W/2 + .11), 1.63, .25]);
   }
   // folding door (right front)
-  for (const dz of [-.2, .2]){ add(g, box(.03, 1.6, .38), yellow, [W/2 + .11, 1.45, -2.65 + dz]); add(g, new PlaneGeometry(.3, .9), glassM, [W/2 + .13, 1.75, -2.65 + dz], [0, Math.PI/2, 0]); }
+  // (its own group on a hinge at the front edge, so it can fold up against the pillar when the doors open)
+  const door = new Group(); door.position.set(W/2 + .11, 0, -3.05); g.add(door); g.userData.door = door;
+  for (const dz of [-.2, .2]){ add(door, box(.03, 1.6, .38), yellow, [0, 1.45, .4 + dz]); add(door, new PlaneGeometry(.3, .9), glassM, [.02, 1.75, .4 + dz], [0, Math.PI/2, 0]); }
   add(g, box(.5, .1, .9), M("#8E908C", .4, .6), [W/2 + .22, .5, -2.65]);
   // windscreen (split), destination board glowing, wipers
   for (const sx of [-1, 1]){

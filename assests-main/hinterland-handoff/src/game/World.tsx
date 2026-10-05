@@ -23,6 +23,7 @@ import { Fireworks } from "./environment/Fireworks";
 import { SkyExtras } from "./environment/SkyExtras";
 import { Weather } from "./environment/Weather";
 import { Feel } from "./vehicle/Feel";
+import { SkyLanterns } from "./environment/SkyLanterns";
 import { Fireflies } from "./environment/Fireflies";
 import { Clouds } from "./environment/Clouds";
 import { Sky } from "./environment/Sky";
@@ -106,6 +107,7 @@ export function World() {
       <SkyHazards key={`hazards-${region}`} />
       {/* systems that belong to every region */}
       <Fireflies />
+      <SkyLanterns />
       <Feel />
       <Weather />
       <Seeds />

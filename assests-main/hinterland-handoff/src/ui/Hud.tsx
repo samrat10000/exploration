@@ -37,6 +37,7 @@ export function Hud() {
         <div><kbd>Space</kbd> brake</div>
         {cargo && <div>hold <kbd>E</kbd> beside a fallen crate</div>}
         <div>drag to look around</div>
+        <div><kbd>V</kbd> camera &nbsp;<kbd>L</kbd> headlights</div>
         {horn ? <div><kbd>H</kbd> horn &nbsp;<kbd>Esc</kbd> pause</div> : <div><kbd>H</kbd> hide hints &nbsp;<kbd>Esc</kbd> pause</div>}
       </Layer>
     </>

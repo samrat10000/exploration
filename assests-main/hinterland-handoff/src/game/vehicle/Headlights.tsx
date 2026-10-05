@@ -27,7 +27,7 @@ export function Headlights() {
 
   useFrame(() => {
     // from dusk (golden hour is 3) toward full night at 4.4
-    const k = GROUND.has(live.vehicle) ? smooth(3.3, 4.4, live.env.tod) : 0, car = live.car, t = live.clock;
+    const k = !GROUND.has(live.vehicle) ? 0 : live.lights === "on" ? 1 : live.lights === "off" ? 0 : smooth(3.3, 4.4, live.env.tod), car = live.car, t = live.clock;
     const fx = -Math.sin(car.yaw), fz = -Math.cos(car.yaw), rx = Math.cos(car.yaw), rz = -Math.sin(car.yaw);
     lights.forEach((l, i) => {
       const side = i ? 1 : -1;

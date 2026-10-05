@@ -1,3 +1,4 @@
+import { UNLOCK_ALL } from "./roster";
 // Garage paints. Index 0 is each vehicle's own colour; the rest are earned on journeys.
 export const PAINTS = {
   rover: ["#C7AB78", "#5F6E52", "#9A4A35", "#E5E0D2", "#384A5A", "#B98A3A", "#6FA0C8"],
@@ -16,6 +17,7 @@ const PAINT_REWARDS: Record<string, ["rover" | "mule", number]> = {
 /** Which paint indices a player owns for a vehicle. */
 export function ownedPaints(v: "rover" | "mule", rewards: string[]) {
   const owned = new Set([0]);
+  if (UNLOCK_ALL) PAINTS[v].forEach((_, i) => owned.add(i));
   for (const r of rewards) { const p = PAINT_REWARDS[r]; if (p && p[0] === v) owned.add(p[1]); }
   return owned;
 }

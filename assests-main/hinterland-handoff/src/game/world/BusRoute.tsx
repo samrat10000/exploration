@@ -53,6 +53,7 @@ export function BusRoute() {
     const s = useStore.getState(), on = live.vehicle === "bus" && s.phase === "play";
     live.bus.on = on && stops.length > 0;
     live.bus.lineT = Math.max(0, live.bus.lineT - dt);
+    live.bus.door = st.doors >= 0;
     if (!live.bus.on) { live.bus.prompt = false; return; }
     const car = live.car, seats = live.bus.seats, n = stops.length;
     // emptied stops fill up again after a while
